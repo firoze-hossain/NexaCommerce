@@ -10,13 +10,47 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+        timeout: 2000ms
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
 
 server:
   port: 8090
   servlet:
     context-path: /api/v1/nexa
+
+application:
+  security:
+    jwt:
+      secret: vgdWZUy3C+x+hnW4PqQj+BtGNOo9UzdXRlRJG1U1mF8=
+      expiration: 8640000
+      refresh-expiration: 604800000
+
+  rate-limit:
+    enabled: true
+    capacity: 100
+    refill-duration: 1
+    endpoints:
+      auth: 10
+      public-api: 100
+      user-api: 500
+      admin-api: 1000

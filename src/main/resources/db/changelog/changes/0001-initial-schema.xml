@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0001-create-permissions-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="permissions"/>
+            </not>
+        </preConditions>
+        <createTable tableName="permissions">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(100)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="description" type="text"/>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+
+        <createIndex tableName="permissions" indexName="idx_permissions_name">
+            <column name="name"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0002-create-roles-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="roles"/>
+            </not>
+        </preConditions>
+        <createTable tableName="roles">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(100)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="description" type="text"/>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+
+        <createIndex tableName="roles" indexName="idx_roles_name">
+            <column name="name"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0003-create-users-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="users"/>
+            </not>
+        </preConditions>
+        <createTable tableName="users">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="password" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_users_role_id" references="roles(id)"/>
+            </column>
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+
+        <createIndex tableName="users" indexName="idx_users_email">
+            <column name="email"/>
+        </createIndex>
+        <createIndex tableName="users" indexName="idx_users_role_id">
+            <column name="role_id"/>
+        </createIndex>
+        <createIndex tableName="users" indexName="idx_users_active">
+            <column name="active"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0004-create-role-permissions-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="role_permissions"/>
+            </not>
+        </preConditions>
+        <createTable tableName="role_permissions">
+            <column name="role_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_role_permissions_role_id" references="roles(id)"/>
+            </column>
+            <column name="permission_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_role_permissions_permission_id"
+                             references="permissions(id)"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="role_permissions" columnNames="role_id, permission_id"/>
+
+        <createIndex tableName="role_permissions" indexName="idx_role_permissions_role_id">
+            <column name="role_id"/>
+        </createIndex>
+        <createIndex tableName="role_permissions" indexName="idx_role_permissions_permission_id">
+            <column name="permission_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
