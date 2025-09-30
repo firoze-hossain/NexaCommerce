@@ -79,6 +79,13 @@ public class BaseController {
     }
 
     /**
+     * 200 OK with existing PaginatedResponse and custom message
+     */
+    protected <T> ResponseEntity<BaseResponse<PaginatedResponse<T>>> paginated(PaginatedResponse<T> paginatedResponse, String message) {
+        return ResponseEntity.ok(BaseResponse.success(paginatedResponse, message));
+    }
+
+    /**
      * 200 OK with custom PaginatedResponse
      */
     protected <T> ResponseEntity<BaseResponse<PaginatedResponse<T>>> paginated(List<T> items, long totalItems, int currentPage, int pageSize, int totalPages) {

@@ -1,5 +1,7 @@
 package com.roze.nexacommerce.user.service.impl;
 
+import com.roze.nexacommerce.exception.AuthenticationException;
+import com.roze.nexacommerce.exception.ResourceNotFoundException;
 import com.roze.nexacommerce.exception.ValidationException;
 import com.roze.nexacommerce.security.JwtUtil;
 import com.roze.nexacommerce.user.dto.request.LoginRequest;
@@ -26,13 +28,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
         } catch (DisabledException e) {
-            throw new RuntimeException("User account is disabled");
+            throw new AuthenticationException("User account is disabled");
         } catch (LockedException e) {
-            throw new RuntimeException("User account is locked");
+            throw new AuthenticationException("User account is locked");
         } catch (BadCredentialsException e) {
             throw new ValidationException("Invalid email or password");
         }
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         String jwtToken = jwtUtil.generateToken(user);
         String refreshToken = jwtUtil.generateRefreshToken(user);
         return LoginResponse.builder()
