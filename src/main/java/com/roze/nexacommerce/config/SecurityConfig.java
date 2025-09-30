@@ -42,7 +42,12 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .authorizeHttpRequests(
                         auth -> auth.requestMatchers("/auth/**")
                                 .permitAll()
-                                .requestMatchers("/public/**").permitAll()
+                                .requestMatchers(
+                                        "/public/**",
+                                        "/swagger-ui/**",
+                                        "/v3/api-docs/**",
+                                        "/v3/api-docs.yaml")
+                                .permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 ).authenticationProvider(authenticationProvider())
