@@ -60,10 +60,10 @@ public class VendorController extends BaseController {
         return paginated(vendors, "Vendors retrieved successfully");
     }
 
-    @GetMapping("/status/{status}")
+    @GetMapping("/status")
     @PreAuthorize("hasAuthority('READ_VENDOR')")
     public ResponseEntity<BaseResponse<PaginatedResponse<VendorResponse>>> getVendorsByStatus(
-            @PathVariable VendorStatus status,
+            @RequestParam VendorStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
