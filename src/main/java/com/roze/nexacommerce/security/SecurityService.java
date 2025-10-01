@@ -65,6 +65,28 @@ public class SecurityService {
                 .orElse(false);
     }
 
+    public boolean canAccessVendor(Long vendorId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        // Check if user has READ_VENDOR permission (for admin/superadmin)
+        boolean hasReadPermission = authentication.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("READ_VENDOR"));
+
+        if (hasReadPermission) {
+            return true;
+        }
+
+        // Check if user is accessing their own vendor data
+        return vendorRepository.findById(vendorId)
+                .map(vendor -> vendor.getUser().getEmail().equals(currentUsername))
+                .orElse(false);
+    }
+
     public boolean isAddressOwner(Long addressId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {

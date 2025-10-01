@@ -32,6 +32,7 @@ public class VendorController extends BaseController {
     }
 
     @GetMapping("/{vendorId}")
+    @PreAuthorize("@securityService.canAccessVendor(#vendorId)")
     public ResponseEntity<BaseResponse<VendorDetailResponse>> getVendorById(@PathVariable Long vendorId) {
         VendorDetailResponse response = vendorService.getVendorById(vendorId);
         return ok(response, "Vendor retrieved successfully");
