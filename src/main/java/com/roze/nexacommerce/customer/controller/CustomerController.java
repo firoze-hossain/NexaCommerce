@@ -29,8 +29,8 @@ public class CustomerController extends BaseController {
         return created(response, "Customer registered successfully");
     }
 
-    @GetMapping("/{customerId}")  //or hasAuthority('READ_USER') or @securityService.canAccessCustomer(#customerId)
-    @PreAuthorize("hasAuthority('READ_CUSTOMER') ")
+    @GetMapping("/{customerId}")
+    @PreAuthorize("hasAuthority('READ_CUSTOMER') or @securityService.canAccessCustomer(#customerId)")
     public ResponseEntity<BaseResponse<CustomerDetailResponse>> getCustomerById(@PathVariable Long customerId) {
         CustomerDetailResponse response = customerService.getCustomerById(customerId);
         return ok(response, "Customer retrieved successfully");

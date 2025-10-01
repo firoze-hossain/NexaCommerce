@@ -234,7 +234,6 @@ public class DataInitializer implements CommandLineRunner {
         // CUSTOMER - Basic permissions
         if (!roleRepository.existsByName("CUSTOMER")) {
             Set<Permission> customerPermissions = permissionRepository.findByNameIn(Arrays.asList(
-                    "READ_CUSTOMER",
                     "READ_PRODUCT", "READ_CATEGORY", "CREATE_ORDER", "READ_ORDER",
                     "CREATE_REVIEW", "READ_REVIEW", "UPDATE_REVIEW"
             ));
