@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public void run(String... args) throws Exception {
         log.info("Starting data initialization...");
         createPermissions();
@@ -141,7 +143,7 @@ public class DataInitializer implements CommandLineRunner {
             Role superAdmin = Role.builder()
                     .name("SUPERADMIN")
                     .description("Fully system control with all permissions")
-                    .permissions(new HashSet<>(permissionRepository.findAll()))
+                    .permissions(new HashSet<>(permissionRepository.findAllWithRoles()))
                     .build();
             roleRepository.save(superAdmin);
             log.info("Created SUPERADMIN role with all permissions");
@@ -247,6 +249,7 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Created CUSTOMER role with {} permissions", customerPermissions.size());
         }
     }
+
     private void createSuperAdmin() {
         String superAdminEmail = "superadmin@nextcommerce.com";
         if (!userRepository.existsByEmail(superAdminEmail)) {

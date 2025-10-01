@@ -37,9 +37,11 @@ public class User extends BaseEntity implements UserDetails, UserPrincipal {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return role.getPermissions().stream().map(permission ->
+        Collection<GrantedAuthority> authorities = role.getPermissions().stream().map(permission ->
                 new SimpleGrantedAuthority(permission.getName()))
                 .collect(Collectors.toList());
+        authorities.add(new SimpleGrantedAuthority(role.getName()));
+        return authorities;
     }
 
     @Override
