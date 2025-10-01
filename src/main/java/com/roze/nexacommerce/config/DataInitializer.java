@@ -43,6 +43,9 @@ public class DataInitializer implements CommandLineRunner {
                 "CREATE_USER", "READ_USER", "UPDATE_USER", "DELETE_USER",
                 "DEACTIVATE_USER", "ACTIVATE_USER",
 
+                "CREATE_ADDRESS", "READ_ADDRESS", "UPDATE_ADDRESS", "DELETE_ADDRESS",
+                // Customer management permissions - ADD THESE
+                "CREATE_CUSTOMER", "READ_CUSTOMER", "UPDATE_CUSTOMER", "DELETE_CUSTOMER",
                 // Role management permissions
                 "CREATE_ROLE", "READ_ROLE", "UPDATE_ROLE", "DELETE_ROLE",
 
@@ -148,7 +151,8 @@ public class DataInitializer implements CommandLineRunner {
             Set<Permission> adminPermissions = permissionRepository.findByNameIn(Arrays.asList(
                     // User management
                     "CREATE_USER", "READ_USER", "UPDATE_USER", "DEACTIVATE_USER", "ACTIVATE_USER",
-
+                    // Customer management - ADD THESE
+                    "READ_CUSTOMER", "UPDATE_CUSTOMER", "DELETE_CUSTOMER",
                     // Vendor management
                     "CREATE_VENDOR", "READ_VENDOR", "UPDATE_VENDOR", "DELETE_VENDOR",
                     "APPROVE_VENDOR", "MANAGE_VENDORS",
@@ -230,6 +234,7 @@ public class DataInitializer implements CommandLineRunner {
         // CUSTOMER - Basic permissions
         if (!roleRepository.existsByName("CUSTOMER")) {
             Set<Permission> customerPermissions = permissionRepository.findByNameIn(Arrays.asList(
+                    "READ_CUSTOMER",
                     "READ_PRODUCT", "READ_CATEGORY", "CREATE_ORDER", "READ_ORDER",
                     "CREATE_REVIEW", "READ_REVIEW", "UPDATE_REVIEW"
             ));

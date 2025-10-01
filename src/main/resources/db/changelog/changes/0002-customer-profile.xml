@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0002-create-customers-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="customers"/>
+            </not>
+        </preConditions>
+        <createTable tableName="customers">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="user_id" type="bigint">
+                <constraints nullable="false" unique="true" foreignKeyName="fk_customers_user_id" references="users(id)"/>
+            </column>
+
+            <column name="phone" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="profile_image" type="varchar(255)"/>
+            <column name="date_of_birth" type="date"/>
+
+            <column name="loyalty_points" type="int" defaultValueNumeric="0"/>
+            <column name="total_orders" type="int" defaultValueNumeric="0"/>
+            <column name="total_spent" type="decimal(15,2)" defaultValueNumeric="0.0"/>
+
+            <column name="currency" type="varchar(10)"/>
+            <column name="language" type="varchar(10)"/>
+            <column name="newsletter_subscribed" type="boolean" defaultValueBoolean="false"/>
+
+            <column name="wishlist_count" type="int" defaultValueNumeric="0"/>
+            <column name="review_count" type="int" defaultValueNumeric="0"/>
+
+            <column name="status" type="varchar(20)" defaultValue="ACTIVE"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp" />
+            <column name="updated_at" type="timestamp" />
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

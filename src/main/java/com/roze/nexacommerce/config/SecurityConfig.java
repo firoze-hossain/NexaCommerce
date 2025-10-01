@@ -44,6 +44,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 .permitAll()
                                 .requestMatchers(
                                         "/public/**",
+                                        "/customers/register",
+                                        "/vendors/register",
                                         "/swagger-ui/**",
                                         "/v3/api-docs/**",
                                         "/v3/api-docs.yaml")

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0003-create-vendors-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="vendors"/>
+            </not>
+        </preConditions>
+        <createTable tableName="vendors">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="user_id" type="bigint">
+                <constraints nullable="false" unique="true" foreignKeyName="fk_vendors_user_id" references="users(id)"/>
+            </column>
+
+            <column name="company_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="business_email" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="business_type" type="varchar(50)"/>
+            <column name="tax_number" type="varchar(100)"/>
+            <column name="description" type="text"/>
+            <column name="logo_url" type="varchar(255)"/>
+            <column name="banner_url" type="varchar(255)"/>
+            <column name="website" type="varchar(255)"/>
+
+            <!-- Business details -->
+            <column name="business_registration_number" type="varchar(100)"/>
+            <column name="bank_account_number" type="varchar(100)"/>
+            <column name="bank_name" type="varchar(100)"/>
+
+            <!-- Platform settings -->
+            <column name="commission_rate" type="decimal(5,2)" defaultValueNumeric="5.0"/>
+            <column name="status" type="varchar(20)" defaultValue="PENDING"/>
+
+            <!-- Stats -->
+            <column name="total_products" type="int" defaultValueNumeric="0"/>
+            <column name="total_orders" type="int" defaultValueNumeric="0"/>
+            <column name="total_sales" type="decimal(15,2)" defaultValueNumeric="0.0"/>
+            <column name="rating_avg" type="decimal(5,2)" defaultValueNumeric="0.0"/>
+            <column name="rating_count" type="int" defaultValueNumeric="0"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

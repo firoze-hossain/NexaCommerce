@@ -158,4 +158,14 @@
             <column name="permission_id"/>
         </createIndex>
     </changeSet>
+    <changeSet id="0005-add-phone-to-users" author="Md. Firoze Hossain">
+        <preConditions>
+            <not>
+                <columnExists tableName="users" columnName="phone"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="users">
+            <column name="phone" type="varchar(20)"></column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

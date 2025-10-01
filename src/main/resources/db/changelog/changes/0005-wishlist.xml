@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0005-create-wishlists-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="wishlists"/>
+            </not>
+        </preConditions>
+        <createTable tableName="wishlists">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="customer_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_wishlist_customer_id" references="customers(id)"/>
+            </column>
+
+            <!-- product_id is commented in your entity, but adding for future use -->
+            <column name="product_id" type="bigint"/>
+
+            <column name="notes" type="text"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp" />
+            <column name="updated_at" type="timestamp" />
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+
+        <!-- Enforce unique (customer_id, product_id) if product_id is used -->
+        <addUniqueConstraint
+                tableName="wishlists"
+                columnNames="customer_id, product_id"
+                constraintName="uq_wishlist_customer_product"/>
+    </changeSet>
+</databaseChangeLog>

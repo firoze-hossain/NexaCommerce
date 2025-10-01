@@ -27,6 +27,7 @@ public class User extends BaseEntity implements UserDetails, UserPrincipal {
     private String email;
     @Column(nullable = false)
     private String password;
+    private String phone;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
@@ -73,5 +74,21 @@ public class User extends BaseEntity implements UserDetails, UserPrincipal {
 
     public Long getUserId() {
         return this.getId();
+    }
+
+    public boolean hasRole(String roleName) {
+        return this.role != null && this.role.getName().equals(roleName);
+    }
+
+    public boolean isCustomer() {
+        return hasRole("CUSTOMER");
+    }
+
+    public boolean isVendor() {
+        return hasRole("VENDOR");
+    }
+
+    public boolean isAdmin() {
+        return hasRole("ADMIN") || hasRole("SUPERADMIN");
     }
 }
