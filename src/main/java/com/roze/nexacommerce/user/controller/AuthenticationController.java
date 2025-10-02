@@ -8,10 +8,7 @@ import com.roze.nexacommerce.user.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -23,5 +20,17 @@ public class AuthenticationController extends BaseController {
     public ResponseEntity<BaseResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authenticationService.login(request);
         return ok(response, "Login successful");
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<BaseResponse<LoginResponse>> refreshToken(@RequestParam String refreshToken) {
+        LoginResponse response = authenticationService.refreshToken(refreshToken);
+        return ok(response, "Token refreshed successfully");
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<BaseResponse<Void>> logout(@RequestHeader("Authorization") String token) {
+        authenticationService.logout(token);
+        return noContent("Logout successfully");
     }
 }

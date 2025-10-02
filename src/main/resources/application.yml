@@ -42,7 +42,7 @@ application:
   security:
     jwt:
       secret: vgdWZUy3C+x+hnW4PqQj+BtGNOo9UzdXRlRJG1U1mF8=
-      expiration: 8640000
+      expiration: 900000
       refresh-expiration: 604800000
 
   rate-limit:

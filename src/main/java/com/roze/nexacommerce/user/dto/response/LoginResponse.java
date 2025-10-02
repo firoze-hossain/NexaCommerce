@@ -13,5 +13,6 @@ public class LoginResponse {
     private String token;
     private String type = "Bearer";
     private String refreshToken;
+    private Long expiresIn;
     private UserResponse user;
 }

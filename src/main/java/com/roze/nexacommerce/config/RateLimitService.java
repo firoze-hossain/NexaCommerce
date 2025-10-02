@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RateLimitService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
 
     /**
      * Simple Redis-based rate limiting using INCR and EXPIRE

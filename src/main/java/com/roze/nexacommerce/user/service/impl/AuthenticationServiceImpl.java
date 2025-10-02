@@ -13,15 +13,27 @@ import com.roze.nexacommerce.user.entity.User;
 import com.roze.nexacommerce.user.repository.UserRepository;
 import com.roze.nexacommerce.user.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.*;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final RedisTemplate<String, String> redisTemplate;
+    private static final String BLACKLIST_PREFIX = "blacklist";
+
+    @Value("${application.security.jwt.expiration}")
+    private Long jwtExpiration;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -40,8 +52,69 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return LoginResponse.builder()
                 .token(jwtToken)
                 .refreshToken(refreshToken)
+                .expiresIn(jwtExpiration/1000)
                 .user(mapToUserResponse(user))
                 .build();
+    }
+
+    @Override
+    public LoginResponse refreshToken(String refreshToken) {
+        try {
+            if (isTokenBlacklisted(refreshToken)) {
+                throw new AuthenticationException("Refresh token is invalid");
+            }
+            String username = jwtUtil.extractUsername(refreshToken);
+            User user = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            if (!user.getActive()) {
+                throw new AuthenticationException("User account is deactivated");
+            }
+            if (!jwtUtil.isTokenValid(refreshToken, user)) {
+                throw new AuthenticationException("Invalid refresh token");
+            }
+            String newAccessToken = jwtUtil.generateToken(user);
+            String newRefreshToken = jwtUtil.generateRefreshToken(user);
+            blacklistToken(refreshToken, jwtUtil.extractExpiration(refreshToken));
+            log.info("Token refreshed for user:{}", user.getEmail());
+            return LoginResponse.builder()
+                    .token(newAccessToken)
+                    .refreshToken(newRefreshToken)
+                    .expiresIn(jwtExpiration / 1000)
+                    .user(mapToUserResponse(user))
+                    .build();
+        } catch (Exception e) {
+            log.error("Token refresh failed:{}", e.getMessage());
+            throw new AuthenticationException("Token refresh failed: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void logout(String token) {
+        try {
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            Date expirationDate = jwtUtil.extractExpiration(token);
+            blacklistToken(token, expirationDate);
+            log.info("User logged out successfully.Token blacklisted");
+        } catch (Exception e) {
+            log.error("Logout failed:{}", e.getMessage());
+            throw new AuthenticationException("Logout failed");
+        }
+    }
+
+    @Override
+    public boolean isTokenBlacklisted(String token) {
+        String key = BLACKLIST_PREFIX + token;
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    private void blacklistToken(String token, Date expirationDate) {
+        String key = BLACKLIST_PREFIX + token;
+        long ttl = expirationDate.getTime() - System.currentTimeMillis();
+        if (ttl > 0) {
+            redisTemplate.opsForValue().set(key, "blacklisted", ttl, TimeUnit.MILLISECONDS);
+        }
     }
 
     private UserResponse mapToUserResponse(User user) {
