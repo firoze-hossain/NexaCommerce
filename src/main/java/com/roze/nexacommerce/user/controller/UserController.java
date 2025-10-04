@@ -5,6 +5,7 @@ import com.roze.nexacommerce.common.BaseController;
 import com.roze.nexacommerce.common.BaseResponse;
 import com.roze.nexacommerce.common.PaginatedResponse;
 import com.roze.nexacommerce.user.dto.request.UserRequest;
+import com.roze.nexacommerce.user.dto.request.UserUpdateRequest;
 import com.roze.nexacommerce.user.dto.response.UserResponse;
 import com.roze.nexacommerce.user.service.UserService;
 import jakarta.validation.Valid;
@@ -56,7 +57,7 @@ public class UserController extends BaseController {
     @PreAuthorize("hasAuthority('UPDATE_USER')")
     public ResponseEntity<BaseResponse<UserResponse>> updateUser(
             @PathVariable Long id,
-            @Valid @RequestBody UserRequest userRequest) {
+            @Valid @RequestBody UserUpdateRequest userRequest) {
         UserResponse userResponse = userService.updateUser(id, userRequest);
         return ok(userResponse, "User updated successfully");
     }
@@ -65,7 +66,7 @@ public class UserController extends BaseController {
     @PreAuthorize("hasAuthority('DELETE_USER')")
     public ResponseEntity<BaseResponse<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        return noContent("User deleted successfully");
+        return ok(null, "User deleted successfully");
     }
 
     @PatchMapping("/{id}/deactivate")

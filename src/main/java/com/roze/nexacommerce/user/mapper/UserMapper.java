@@ -1,6 +1,7 @@
 package com.roze.nexacommerce.user.mapper;
 
 import com.roze.nexacommerce.user.dto.request.UserRequest;
+import com.roze.nexacommerce.user.dto.request.UserUpdateRequest;
 import com.roze.nexacommerce.user.dto.response.UserResponse;
 import com.roze.nexacommerce.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class UserMapper {
         return response;
     }
 
-    public void updateEntity(UserRequest request, User user) {
+    public void updateEntity(UserUpdateRequest request, User user) {
         modelMapper.map(request, user);
     }
 }

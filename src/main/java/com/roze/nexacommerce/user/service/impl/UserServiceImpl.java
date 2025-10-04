@@ -4,6 +4,7 @@ import com.roze.nexacommerce.common.PaginatedResponse;
 import com.roze.nexacommerce.exception.DuplicateResourceException;
 import com.roze.nexacommerce.exception.ResourceNotFoundException;
 import com.roze.nexacommerce.user.dto.request.UserRequest;
+import com.roze.nexacommerce.user.dto.request.UserUpdateRequest;
 import com.roze.nexacommerce.user.dto.response.UserResponse;
 import com.roze.nexacommerce.user.entity.Role;
 import com.roze.nexacommerce.user.entity.User;
@@ -97,7 +98,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse updateUser(Long id, UserRequest userRequest) {
+    public UserResponse updateUser(Long id, UserUpdateRequest userRequest) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
@@ -117,7 +118,9 @@ public class UserServiceImpl implements UserService {
         }
 
         User updatedUser = userRepository.save(user);
-        return userMapper.toResponse(updatedUser);
+        UserResponse response = userMapper.toResponse(updatedUser);
+        log.info("User updated successfully: {}"+response);
+        return response;
     }
 
     @Override

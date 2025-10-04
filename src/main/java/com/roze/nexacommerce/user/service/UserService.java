@@ -2,6 +2,7 @@ package com.roze.nexacommerce.user.service;
 
 import com.roze.nexacommerce.common.PaginatedResponse;
 import com.roze.nexacommerce.user.dto.request.UserRequest;
+import com.roze.nexacommerce.user.dto.request.UserUpdateRequest;
 import com.roze.nexacommerce.user.dto.response.UserResponse;
 import org.springframework.data.domain.Pageable;
 
@@ -16,7 +17,7 @@ public interface UserService {
 
     PaginatedResponse<UserResponse> getUsersByRole(String roleName, Pageable pageable);
 
-    UserResponse updateUser(Long id, UserRequest userRequest);
+    UserResponse updateUser(Long id, UserUpdateRequest userRequest);
 
     void deleteUser(Long id);
 
