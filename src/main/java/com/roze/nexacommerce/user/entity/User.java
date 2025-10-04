@@ -93,4 +93,14 @@ public class User extends BaseEntity implements UserDetails, UserPrincipal {
     public boolean isAdmin() {
         return hasRole("ADMIN") || hasRole("SUPERADMIN");
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + getId() +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", active=" + active +
+                '}';
+    }
 }

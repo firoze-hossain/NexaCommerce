@@ -38,4 +38,13 @@ public class Permission extends BaseEntity {
     public int hashCode() {
         return Objects.hash(getId(), name);
     }
+
+    @Override
+    public String toString() {
+        return "Permission{" +
+                "id=" + getId() +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                '}';
+    }
 }

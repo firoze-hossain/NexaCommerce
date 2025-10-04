@@ -12,6 +12,7 @@ import com.roze.nexacommerce.user.repository.RoleRepository;
 import com.roze.nexacommerce.user.repository.UserRepository;
 import com.roze.nexacommerce.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +23,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -39,7 +41,9 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(role);
         User savedUser = userRepository.save(user);
-        return userMapper.toResponse(savedUser);
+        UserResponse response = userMapper.toResponse(savedUser);
+        log.info("User created Successfully:{}", response);
+        return response;
     }
 
     @Override
@@ -62,14 +66,16 @@ public class UserServiceImpl implements UserService {
                 .stream()
                 .map(userMapper::toResponse)
                 .toList();
-
-        return PaginatedResponse.<UserResponse>builder()
+        log.info("Users loaded successfully: {} ", userResponses);
+        PaginatedResponse<UserResponse> paginatedResponse = PaginatedResponse.<UserResponse>builder()
                 .items(userResponses)
                 .totalItems(userPage.getTotalElements())
                 .currentPage(userPage.getNumber())
                 .pageSize(userPage.getSize())
                 .totalPages(userPage.getTotalPages())
                 .build();
+        log.info("Paginated users loaded successfully: {} ", paginatedResponse);
+        return paginatedResponse;
     }
 
     @Override
