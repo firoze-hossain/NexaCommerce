@@ -251,7 +251,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void createSuperAdmin() {
-        String superAdminEmail = "superadmin@nextcommerce.com";
+        String superAdminEmail = "superadmin@nexacommerce.com";
         if (!userRepository.existsByEmail(superAdminEmail)) {
             Role superAdminRole = roleRepository.findByName("SUPERADMIN")
                     .orElseThrow(() -> new RuntimeException("SUPERADMIN role not found"));
@@ -259,7 +259,7 @@ public class DataInitializer implements CommandLineRunner {
             User superAdmin = User.builder()
                     .name("Super Administrator")
                     .email(superAdminEmail)
-                    .password(passwordEncoder.encode("SuperAdmin123!"))
+                    .password(passwordEncoder.encode("firoze28"))
                     .role(superAdminRole)
                     .active(true)
                     .build();
@@ -272,7 +272,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void createDefaultAdmin() {
-        String adminEmail = "admin@nextcommerce.com";
+        String adminEmail = "admin@nexacommerce.com";
         if (!userRepository.existsByEmail(adminEmail)) {
             Role adminRole = roleRepository.findByName("ADMIN")
                     .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
@@ -280,7 +280,7 @@ public class DataInitializer implements CommandLineRunner {
             User admin = User.builder()
                     .name("System Administrator")
                     .email(adminEmail)
-                    .password(passwordEncoder.encode("Admin123!"))
+                    .password(passwordEncoder.encode("firoze28"))
                     .role(adminRole)
                     .active(true)
                     .build();
