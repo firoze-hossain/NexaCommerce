@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0006-create-categories-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="categories"/>
+            </not>
+        </preConditions>
+        <createTable tableName="categories">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="description" type="text"/>
+            <column name="slug" type="varchar(255)"/>
+            <column name="image_url" type="varchar(255)"/>
+            <column name="display_order" type="integer"/>
+            <column name="featured" type="boolean"/>
+            <column name="active" type="boolean"/>
+            <column name="parent_id" type="bigint">
+                <constraints foreignKeyName="fk_categories_parent_id" references="categories(id)"/>
+            </column>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="0007-create-products-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="products"/>
+            </not>
+        </preConditions>
+        <createTable tableName="products">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="vendor_id" type="bigint">
+                <constraints  foreignKeyName="fk_products_vendor_id" references="vendors(id)"/>
+            </column>
+
+            <column name="category_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_products_category_id" references="categories(id)"/>
+            </column>
+
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="description" type="text"/>
+            <column name="short_description" type="text"/>
+            <column name="price" type="decimal(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="compare_at_price" type="decimal(10,2)"/>
+            <column name="stock" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="low_stock_threshold" type="integer"/>
+            <column name="sku" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="barcode" type="varchar(255)"/>
+            <column name="track_quantity" type="boolean"/>
+            <column name="allow_backorder" type="boolean"/>
+            <column name="weight" type="decimal(10,2)"/>
+            <column name="weight_unit" type="varchar(20)"/>
+            <column name="status" type="varchar(50)" defaultValue="DRAFT"/>
+            <column name="featured" type="boolean"/>
+            <column name="published" type="boolean"/>
+            <column name="meta_title" type="varchar(255)"/>
+            <column name="meta_description" type="text"/>
+            <column name="tags" type="text"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="0008-create-product-images-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="product_images"/>
+            </not>
+        </preConditions>
+        <createTable tableName="product_images">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="product_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_product_images_product_id" references="products(id)"/>
+            </column>
+
+            <column name="image_url" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="alt_text" type="varchar(255)"/>
+            <column name="display_order" type="integer"/>
+            <column name="is_primary" type="boolean"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="0009-create-product-attributes-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="product_attributes"/>
+            </not>
+        </preConditions>
+        <createTable tableName="product_attributes">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="product_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_product_attributes_product_id" references="products(id)"/>
+            </column>
+
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="value" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="display_type" type="varchar(50)"/>
+            <column name="display_order" type="integer"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
