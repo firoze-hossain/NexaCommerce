@@ -5,33 +5,43 @@ import com.roze.nexacommerce.category.repository.CategoryRepository;
 import com.roze.nexacommerce.common.PaginatedResponse;
 import com.roze.nexacommerce.exception.DuplicateResourceException;
 import com.roze.nexacommerce.exception.ResourceNotFoundException;
+import com.roze.nexacommerce.product.dto.request.ProductAttributeRequest;
 import com.roze.nexacommerce.product.dto.request.ProductCreateRequest;
+import com.roze.nexacommerce.product.dto.request.ProductImageRequest;
 import com.roze.nexacommerce.product.dto.request.ProductUpdateRequest;
 import com.roze.nexacommerce.product.dto.response.ProductResponse;
 import com.roze.nexacommerce.product.entity.Product;
+import com.roze.nexacommerce.product.entity.ProductAttribute;
+import com.roze.nexacommerce.product.entity.ProductImage;
 import com.roze.nexacommerce.product.enums.ProductStatus;
 import com.roze.nexacommerce.product.mapper.ProductMapper;
+import com.roze.nexacommerce.product.repository.ProductAttributeRepository;
+import com.roze.nexacommerce.product.repository.ProductImageRepository;
 import com.roze.nexacommerce.product.repository.ProductRepository;
 import com.roze.nexacommerce.product.service.ProductService;
 import com.roze.nexacommerce.vendor.entity.VendorProfile;
 import com.roze.nexacommerce.vendor.repository.VendorProfileRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final VendorProfileRepository vendorRepository;
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
+    private final ProductAttributeRepository productAttributeRepository;
+    private final ProductImageRepository productImageRepository;
 
     @Override
     @Transactional
@@ -154,29 +164,136 @@ public class ProductServiceImpl implements ProductService {
             product.setCategory(category);
         }
 
+        // Update basic fields
         productMapper.updateEntity(request, product);
 
-        // Update images and attributes
+        // ========== SMART UPDATE FOR IMAGES ==========
         if (request.getImages() != null) {
-            product.getImages().clear();
-            request.getImages().forEach(imageRequest -> {
-                var image = productMapper.toImageEntity(imageRequest);
-                image.setProduct(product);
-                product.getImages().add(image);
-            });
+            updateProductImages(product, request.getImages());
         }
 
+        // ========== SMART UPDATE FOR ATTRIBUTES ==========
         if (request.getAttributes() != null) {
-            product.getAttributes().clear();
-            request.getAttributes().forEach(attributeRequest -> {
-                var attribute = productMapper.toAttributeEntity(attributeRequest);
-                attribute.setProduct(product);
-                product.getAttributes().add(attribute);
-            });
+            updateProductAttributes(product, request.getAttributes());
         }
 
+        // Save the main product entity
         Product updatedProduct = productRepository.save(product);
+        log.info("Product updated successfully with ID: {}", productId);
         return productMapper.toResponse(updatedProduct);
+    }
+
+    /**
+     * Smart update for product images:
+     * - Images with ID: Update existing images
+     * - Images without ID: Add new images
+     * - Missing existing IDs: Remove those images
+     */
+    private void updateProductImages(Product product, List<ProductImageRequest> imageRequests) {
+        // Convert request to entities and set product reference
+        List<ProductImage> newImages = imageRequests.stream()
+                .map(request -> {
+                    ProductImage image = productMapper.toImageEntity(request);
+                    image.setProduct(product);
+                    return image;
+                })
+                .collect(Collectors.toList());
+
+        // Separate new images (without ID) and existing images (with ID)
+        List<ProductImage> imagesToAdd = newImages.stream()
+                .filter(img -> img.getId() == null)
+                .collect(Collectors.toList());
+
+        Map<Long, ProductImage> imagesToUpdate = newImages.stream()
+                .filter(img -> img.getId() != null)
+                .collect(Collectors.toMap(ProductImage::getId, img -> img));
+
+        // Get current images
+        List<ProductImage> currentImages = new ArrayList<>(product.getImages());
+
+        // Update existing images
+        for (ProductImage currentImage : currentImages) {
+            if (imagesToUpdate.containsKey(currentImage.getId())) {
+                ProductImage updatedImage = imagesToUpdate.get(currentImage.getId());
+                // Update fields of existing image
+                currentImage.setImageUrl(updatedImage.getImageUrl());
+                currentImage.setAltText(updatedImage.getAltText());
+                currentImage.setDisplayOrder(updatedImage.getDisplayOrder());
+                currentImage.setIsPrimary(updatedImage.getIsPrimary());
+            }
+        }
+
+        // Remove images that are not in the request (if frontend wants to delete specific ones)
+        // This assumes frontend sends ALL images they want to keep + new ones
+        Set<Long> requestedImageIds = imageRequests.stream()
+                .map(req -> req.getId()) // You need to add id field to ProductImageRequest
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<ProductImage> imagesToRemove = currentImages.stream()
+                .filter(img -> !requestedImageIds.contains(img.getId()))
+                .collect(Collectors.toList());
+
+        imagesToRemove.forEach(product::removeImage);
+
+        // Add new images
+        imagesToAdd.forEach(product::addImage);
+    }
+
+    /**
+     * Smart update for product attributes:
+     * - Attributes with ID: Update existing attributes
+     * - Attributes without ID: Add new attributes
+     * - Missing existing IDs: Remove those attributes
+     */
+    private void updateProductAttributes(Product product, List<ProductAttributeRequest> attributeRequests) {
+        // Convert request to entities and set product reference
+        List<ProductAttribute> newAttributes = attributeRequests.stream()
+                .map(request -> {
+                    ProductAttribute attribute = productMapper.toAttributeEntity(request);
+                    attribute.setProduct(product);
+                    return attribute;
+                })
+                .collect(Collectors.toList());
+
+        // Separate new attributes (without ID) and existing attributes (with ID)
+        List<ProductAttribute> attributesToAdd = newAttributes.stream()
+                .filter(attr -> attr.getId() == null)
+                .collect(Collectors.toList());
+
+        Map<Long, ProductAttribute> attributesToUpdate = newAttributes.stream()
+                .filter(attr -> attr.getId() != null)
+                .collect(Collectors.toMap(ProductAttribute::getId, attr -> attr));
+
+        // Get current attributes
+        List<ProductAttribute> currentAttributes = new ArrayList<>(product.getAttributes());
+
+        // Update existing attributes
+        for (ProductAttribute currentAttribute : currentAttributes) {
+            if (attributesToUpdate.containsKey(currentAttribute.getId())) {
+                ProductAttribute updatedAttribute = attributesToUpdate.get(currentAttribute.getId());
+                // Update fields of existing attribute
+                currentAttribute.setName(updatedAttribute.getName());
+                currentAttribute.setValue(updatedAttribute.getValue());
+                currentAttribute.setDisplayType(updatedAttribute.getDisplayType());
+                currentAttribute.setDisplayOrder(updatedAttribute.getDisplayOrder());
+            }
+        }
+
+        // Remove attributes that are not in the request
+        Set<Long> requestedAttributeIds = attributeRequests.stream()
+                .map(req -> req.getId()) // You need to add id field to ProductAttributeRequest
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<ProductAttribute> attributesToRemove = currentAttributes.stream()
+                .filter(attr -> !requestedAttributeIds.contains(attr.getId()))
+                .collect(Collectors.toList());
+
+        attributesToRemove.forEach(product::removeAttribute);
+
+        // Add new attributes
+        attributesToAdd.forEach(product::addAttribute);
     }
 
     @Override
@@ -200,7 +317,8 @@ public class ProductServiceImpl implements ProductService {
         product.setStock(stock);
         Product updatedProduct = productRepository.save(product);
 
-        return productMapper.toResponse(updatedProduct);
+        ProductResponse response = productMapper.toResponse(updatedProduct);
+        return response;
     }
 
     @Override

@@ -11,13 +11,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductAttributeRequest {
+    private Long id;
     @NotBlank(message = "Attribute key is required")
     private String name;
-    
+
     @NotBlank(message = "Attribute value is required")
     private String value;
-    
+
     private String displayType;
-    
+
     private Integer displayOrder;
 }

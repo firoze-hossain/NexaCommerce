@@ -11,12 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductImageRequest {
+    private Long id;
     @NotBlank(message = "Image URL is required")
     private String imageUrl;
-    
+
     private String altText;
-    
+
     private Integer displayOrder;
-    
+
     private Boolean isPrimary;
 }
