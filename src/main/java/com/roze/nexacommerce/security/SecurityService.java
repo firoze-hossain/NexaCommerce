@@ -1,6 +1,7 @@
 package com.roze.nexacommerce.security;
 
 import com.roze.nexacommerce.common.address.repository.AddressRepository;
+import com.roze.nexacommerce.customer.entity.CustomerProfile;
 import com.roze.nexacommerce.customer.repository.CustomerProfileRepository;
 import com.roze.nexacommerce.user.entity.User;
 import com.roze.nexacommerce.user.repository.UserRepository;
@@ -9,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -97,5 +100,43 @@ public class SecurityService {
         return addressRepository.findById(addressId)
                 .map(address -> address.getUser().getEmail().equals(currentUsername))
                 .orElse(false);
+    }
+
+    // ===== CUSTOMER METHODS =====
+    public boolean isCurrentCustomer() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        // Check if the current user has a customer profile
+        return customerRepository.findByUserEmail(currentUsername).isPresent();
+    }
+
+    public boolean isCurrentCustomer(Long customerId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        return customerRepository.findById(customerId)
+                .map(customer -> customer.getUser().getEmail().equals(currentUsername))
+                .orElse(false);
+    }
+
+    public Long getCurrentCustomerId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        String currentUsername = authentication.getName();
+
+        Optional<CustomerProfile> customer = customerRepository.findByUserEmail(currentUsername);
+        return customer.map(CustomerProfile::getId).orElse(null);
     }
 }

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0007-create-carts-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="carts"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="carts">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign key to customer_profile - make nullable initially -->
+            <column name="customer_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Foreign key to users table -->
+            <column name="user_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="session_id" type="varchar(255)"/>
+
+            <column name="type" type="varchar(20)" defaultValue="CUSTOMER">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="cart_name" type="varchar(255)"/>
+
+            <column name="is_active" type="boolean" defaultValueBoolean="true"/>
+            <column name="is_saved" type="boolean" defaultValueBoolean="false"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create index for better performance -->
+        <createIndex tableName="carts" indexName="idx_carts_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+
+        <createIndex tableName="carts" indexName="idx_carts_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex tableName="carts" indexName="idx_carts_session_id">
+            <column name="session_id"/>
+        </createIndex>
+
+        <createIndex tableName="carts" indexName="idx_carts_type">
+            <column name="type"/>
+        </createIndex>
+
+        <createIndex tableName="carts" indexName="idx_carts_is_active">
+            <column name="is_active"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0007-create-cart-items-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="cart_items"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="cart_items">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign key to carts table -->
+            <column name="cart_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Foreign key to products table -->
+            <column name="product_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="quantity" type="int" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="price" type="decimal(10,2)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="compare_at_price" type="decimal(10,2)"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Add unique constraint to prevent duplicate products in the same cart -->
+        <addUniqueConstraint
+                tableName="cart_items"
+                columnNames="cart_id, product_id"
+                constraintName="uk_cart_items_cart_product"
+                deferrable="false"
+                disabled="false"/>
+
+        <!-- Create indexes for better performance -->
+        <createIndex tableName="cart_items" indexName="idx_cart_items_cart_id">
+            <column name="cart_id"/>
+        </createIndex>
+
+        <createIndex tableName="cart_items" indexName="idx_cart_items_product_id">
+            <column name="product_id"/>
+        </createIndex>
+
+        <createIndex tableName="cart_items" indexName="idx_cart_items_cart_product">
+            <column name="cart_id"/>
+            <column name="product_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Add foreign key constraints in a separate changeset after all tables exist -->
+    <changeSet id="0007-add-cart-foreign-keys" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="carts"/>
+            <tableExists tableName="customer_profile"/>
+            <tableExists tableName="users"/>
+            <tableExists tableName="products"/>
+        </preConditions>
+
+        <!-- Add foreign key to customer_profile -->
+        <addForeignKeyConstraint
+                baseTableName="carts"
+                baseColumnNames="customer_id"
+                constraintName="fk_carts_customer_id"
+                referencedTableName="customer_profile"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key to users -->
+        <addForeignKeyConstraint
+                baseTableName="carts"
+                baseColumnNames="user_id"
+                constraintName="fk_carts_user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for cart_items to carts -->
+        <addForeignKeyConstraint
+                baseTableName="cart_items"
+                baseColumnNames="cart_id"
+                constraintName="fk_cart_items_cart_id"
+                referencedTableName="carts"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for cart_items to products -->
+        <addForeignKeyConstraint
+                baseTableName="cart_items"
+                baseColumnNames="product_id"
+                constraintName="fk_cart_items_product_id"
+                referencedTableName="products"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+    </changeSet>
+
+    <!-- Add check constraints -->
+    <changeSet id="0007-add-cart-check-constraints" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="carts"/>
+            <tableExists tableName="cart_items"/>
+        </preConditions>
+
+        <!-- Add check constraint for cart ownership -->
+        <sql>
+            ALTER TABLE carts ADD CONSTRAINT chk_cart_ownership CHECK (
+            (type = 'CUSTOMER' AND customer_id IS NOT NULL) OR
+            (type = 'ADMIN' AND user_id IS NOT NULL) OR
+            (type = 'GUEST' AND session_id IS NOT NULL)
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

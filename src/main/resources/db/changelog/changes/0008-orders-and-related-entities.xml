@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0008-create-orders-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="orders"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="orders">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Order identification -->
+            <column name="order_number" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <!-- Foreign keys - make nullable initially -->
+            <column name="customer_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="processed_by" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="vendor_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Order details -->
+            <column name="source" type="varchar(20)" defaultValue="WEBSTORE">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Amount fields -->
+            <column name="total_amount" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="shipping_amount" type="decimal(12,2)" defaultValueNumeric="0.00"/>
+            <column name="tax_amount" type="decimal(12,2)" defaultValueNumeric="0.00"/>
+            <column name="discount_amount" type="decimal(12,2)" defaultValueNumeric="0.00"/>
+
+            <column name="final_amount" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Status fields -->
+            <column name="status" type="varchar(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="payment_status" type="varchar(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Shipping Address embedded fields -->
+            <column name="shipping_full_name" type="varchar(255)"/>
+            <column name="shipping_phone" type="varchar(20)"/>
+            <column name="shipping_address_line1" type="varchar(255)"/>
+            <column name="shipping_address_line2" type="varchar(255)"/>
+            <column name="shipping_city" type="varchar(100)"/>
+            <column name="shipping_state" type="varchar(100)"/>
+            <column name="shipping_postal_code" type="varchar(20)"/>
+            <column name="shipping_country" type="varchar(100)"/>
+            <column name="shipping_instructions" type="text"/>
+
+            <!-- Billing Address embedded fields -->
+            <column name="billing_full_name" type="varchar(255)"/>
+            <column name="billing_phone" type="varchar(20)"/>
+            <column name="billing_address_line1" type="varchar(255)"/>
+            <column name="billing_address_line2" type="varchar(255)"/>
+            <column name="billing_city" type="varchar(100)"/>
+            <column name="billing_state" type="varchar(100)"/>
+            <column name="billing_postal_code" type="varchar(20)"/>
+            <column name="billing_country" type="varchar(100)"/>
+            <column name="billing_same_as_shipping" type="boolean" defaultValueBoolean="true"/>
+
+            <!-- Additional fields -->
+            <column name="customer_notes" type="text"/>
+            <column name="internal_notes" type="text"/>
+            <column name="coupon_code" type="varchar(100)"/>
+            <column name="coupon_discount" type="decimal(12,2)"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create indexes for better performance -->
+        <createIndex tableName="orders" indexName="idx_orders_order_number">
+            <column name="order_number"/>
+        </createIndex>
+
+        <createIndex tableName="orders" indexName="idx_orders_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+
+        <createIndex tableName="orders" indexName="idx_orders_vendor_id">
+            <column name="vendor_id"/>
+        </createIndex>
+
+        <createIndex tableName="orders" indexName="idx_orders_status">
+            <column name="status"/>
+        </createIndex>
+
+        <createIndex tableName="orders" indexName="idx_orders_payment_status">
+            <column name="payment_status"/>
+        </createIndex>
+
+        <createIndex tableName="orders" indexName="idx_orders_created_at">
+            <column name="created_at"/>
+        </createIndex>
+
+        <createIndex tableName="orders" indexName="idx_orders_source">
+            <column name="source"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0008-create-order-items-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="order_items"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="order_items">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign keys - make nullable initially -->
+            <column name="order_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="product_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Order item details -->
+            <column name="quantity" type="int">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="price" type="decimal(10,2)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="compare_at_price" type="decimal(10,2)"/>
+
+            <!-- Product snapshot (for historical data) -->
+            <column name="product_name" type="varchar(255)"/>
+            <column name="product_sku" type="varchar(100)"/>
+            <column name="product_image" type="varchar(255)"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create indexes for better performance -->
+        <createIndex tableName="order_items" indexName="idx_order_items_order_id">
+            <column name="order_id"/>
+        </createIndex>
+
+        <createIndex tableName="order_items" indexName="idx_order_items_product_id">
+            <column name="product_id"/>
+        </createIndex>
+
+        <createIndex tableName="order_items" indexName="idx_order_items_order_product">
+            <column name="order_id"/>
+            <column name="product_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0009-create-order-history-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="order_history"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="order_history">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign keys - make nullable initially -->
+            <column name="order_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="user_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- History details -->
+            <column name="action" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="description" type="varchar(500)"/>
+            <column name="old_value" type="text"/>
+            <column name="new_value" type="text"/>
+            <column name="notes" type="text"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create indexes for better performance -->
+        <createIndex tableName="order_history" indexName="idx_order_history_order_id">
+            <column name="order_id"/>
+        </createIndex>
+
+        <createIndex tableName="order_history" indexName="idx_order_history_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex tableName="order_history" indexName="idx_order_history_action">
+            <column name="action"/>
+        </createIndex>
+
+        <createIndex tableName="order_history" indexName="idx_order_history_created_at">
+            <column name="created_at"/>
+        </createIndex>
+
+        <createIndex tableName="order_history" indexName="idx_order_history_order_created">
+            <column name="order_id"/>
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Add foreign key constraints in a separate changeset after all tables exist -->
+    <changeSet id="0010-add-orders-foreign-keys" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="orders"/>
+            <tableExists tableName="customer_profile"/>
+            <tableExists tableName="users"/>
+            <tableExists tableName="vendor_profile"/>
+            <tableExists tableName="products"/>
+        </preConditions>
+
+        <!-- Add foreign key for orders to customer_profile -->
+        <addForeignKeyConstraint
+                baseTableName="orders"
+                baseColumnNames="customer_id"
+                constraintName="fk_orders_customer_id"
+                referencedTableName="customer_profile"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for orders to users (processed_by) -->
+        <addForeignKeyConstraint
+                baseTableName="orders"
+                baseColumnNames="processed_by"
+                constraintName="fk_orders_processed_by"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for orders to vendor_profile -->
+        <addForeignKeyConstraint
+                baseTableName="orders"
+                baseColumnNames="vendor_id"
+                constraintName="fk_orders_vendor_id"
+                referencedTableName="vendor_profile"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for order_items to orders -->
+        <addForeignKeyConstraint
+                baseTableName="order_items"
+                baseColumnNames="order_id"
+                constraintName="fk_order_items_order_id"
+                referencedTableName="orders"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for order_items to products -->
+        <addForeignKeyConstraint
+                baseTableName="order_items"
+                baseColumnNames="product_id"
+                constraintName="fk_order_items_product_id"
+                referencedTableName="products"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for order_history to orders -->
+        <addForeignKeyConstraint
+                baseTableName="order_history"
+                baseColumnNames="order_id"
+                constraintName="fk_order_history_order_id"
+                referencedTableName="orders"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for order_history to users -->
+        <addForeignKeyConstraint
+                baseTableName="order_history"
+                baseColumnNames="user_id"
+                constraintName="fk_order_history_user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+    </changeSet>
+
+    <!-- Add check constraints -->
+    <changeSet id="0011-add-orders-check-constraints" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="orders"/>
+            <tableExists tableName="order_items"/>
+        </preConditions>
+
+        <!-- Add check constraint for positive quantity in order_items -->
+        <sql>
+            ALTER TABLE order_items ADD CONSTRAINT chk_order_items_quantity_positive CHECK (quantity > 0);
+        </sql>
+
+        <!-- Add check constraint for positive price in order_items -->
+        <sql>
+            ALTER TABLE order_items ADD CONSTRAINT chk_order_items_price_positive CHECK (price >= 0);
+        </sql>
+
+        <!-- Add check constraint for positive amounts in orders -->
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_total_amount_positive CHECK (total_amount >= 0);
+        </sql>
+
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_final_amount_positive CHECK (final_amount >= 0);
+        </sql>
+
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_shipping_amount_non_negative CHECK (shipping_amount >= 0);
+        </sql>
+
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_tax_amount_non_negative CHECK (tax_amount >= 0);
+        </sql>
+
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_discount_amount_non_negative CHECK (discount_amount >= 0);
+        </sql>
+    </changeSet>
+</databaseChangeLog>

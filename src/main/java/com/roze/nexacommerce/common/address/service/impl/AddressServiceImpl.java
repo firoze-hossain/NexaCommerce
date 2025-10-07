@@ -37,7 +37,7 @@ public class AddressServiceImpl implements AddressService {
 
         Address address = addressMapper.toEntity(request);
         address.setUser(user);
-        
+
         Address savedAddress = addressRepository.save(address);
         return addressMapper.toResponse(savedAddress);
     }
@@ -119,5 +119,11 @@ public class AddressServiceImpl implements AddressService {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
         addressRepository.delete(address);
+    }
+
+    @Override
+    public Address getAddressEntityById(Long addressId) {
+        return addressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
     }
 }
