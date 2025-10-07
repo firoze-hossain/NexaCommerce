@@ -4,10 +4,14 @@ import com.roze.nexacommerce.product.dto.request.ProductAttributeRequest;
 import com.roze.nexacommerce.product.dto.request.ProductCreateRequest;
 import com.roze.nexacommerce.product.dto.request.ProductImageRequest;
 import com.roze.nexacommerce.product.dto.request.ProductUpdateRequest;
-import com.roze.nexacommerce.product.dto.response.*;
+import com.roze.nexacommerce.product.dto.response.ProductAttributeResponse;
+import com.roze.nexacommerce.product.dto.response.ProductImageResponse;
+import com.roze.nexacommerce.product.dto.response.ProductResponse;
+import com.roze.nexacommerce.product.dto.response.VendorInfo;
 import com.roze.nexacommerce.product.entity.Product;
 import com.roze.nexacommerce.product.entity.ProductAttribute;
 import com.roze.nexacommerce.product.entity.ProductImage;
+import com.roze.nexacommerce.vendor.entity.VendorProfile;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
@@ -22,7 +26,7 @@ public class ProductMapper {
 
     public Product toEntity(ProductCreateRequest request) {
         Product product = modelMapper.map(request, Product.class);
-        
+
         // Map images
         if (request.getImages() != null) {
             List<ProductImage> images = request.getImages().stream()
@@ -30,7 +34,7 @@ public class ProductMapper {
                     .collect(Collectors.toList());
             product.setImages(images);
         }
-        
+
         // Map attributes
         if (request.getAttributes() != null) {
             List<ProductAttribute> attributes = request.getAttributes().stream()
@@ -38,25 +42,29 @@ public class ProductMapper {
                     .collect(Collectors.toList());
             product.setAttributes(attributes);
         }
-        
+
         return product;
     }
 
     public ProductResponse toResponse(Product product) {
         ProductResponse response = modelMapper.map(product, ProductResponse.class);
-        
+
         // Set vendor info
         if (product.getVendor() != null) {
             response.setVendorId(product.getVendor().getId());
             response.setVendorName(product.getVendor().getCompanyName());
         }
-        
+
         // Set category info
         if (product.getCategory() != null) {
             response.setCategoryId(product.getCategory().getId());
             response.setCategoryName(product.getCategory().getName());
         }
-        
+        if (product.getBrand() != null) {
+            response.setBrandId(product.getBrand().getId());
+            response.setBrandName(product.getBrand().getName());
+            response.setBrandSlug(product.getBrand().getSlug());
+        }
         // Map images
         if (product.getImages() != null) {
             List<ProductImageResponse> imageResponses = product.getImages().stream()
@@ -64,7 +72,7 @@ public class ProductMapper {
                     .collect(Collectors.toList());
             response.setImages(imageResponses);
         }
-        
+
         // Map attributes
         if (product.getAttributes() != null) {
             List<ProductAttributeResponse> attributeResponses = product.getAttributes().stream()
@@ -72,12 +80,12 @@ public class ProductMapper {
                     .collect(Collectors.toList());
             response.setAttributes(attributeResponses);
         }
-        
+
         // Set computed fields
         response.setInStock(product.isInStock());
         response.setLowStock(product.isLowStock());
         response.setAvailable(product.isAvailable());
-        
+
         return response;
     }
 
@@ -101,7 +109,7 @@ public class ProductMapper {
         modelMapper.map(request, product);
     }
 
-    public VendorInfo toVendorInfo(com.roze.nexacommerce.vendor.entity.VendorProfile vendor) {
+    public VendorInfo toVendorInfo(VendorProfile vendor) {
         return VendorInfo.builder()
                 .vendorId(vendor.getId())
                 .companyName(vendor.getCompanyName())

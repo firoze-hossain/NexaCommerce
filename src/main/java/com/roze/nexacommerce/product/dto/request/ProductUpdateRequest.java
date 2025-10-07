@@ -15,6 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ProductUpdateRequest {
     private Long categoryId;
+    private Long brandId;
     private String name;
     private String description;
     private String shortDescription;
@@ -34,10 +35,10 @@ public class ProductUpdateRequest {
     private String metaTitle;
     private String metaDescription;
     private String tags;
-    
+
     @Builder.Default
     private List<ProductImageRequest> images = new ArrayList<>();
-    
+
     @Builder.Default
     private List<ProductAttributeRequest> attributes = new ArrayList<>();
 }

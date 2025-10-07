@@ -1,5 +1,6 @@
 package com.roze.nexacommerce.product.entity;
 
+import com.roze.nexacommerce.brand.entity.Brand;
 import com.roze.nexacommerce.category.entity.Category;
 import com.roze.nexacommerce.common.BaseEntity;
 import com.roze.nexacommerce.product.enums.ProductStatus;
@@ -87,6 +88,10 @@ public class Product extends BaseEntity {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     @Builder.Default
     private List<ProductAttribute> attributes = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private Brand brand;
 
     // Helper methods
     public void addImage(ProductImage image) {

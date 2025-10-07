@@ -22,7 +22,7 @@ public class ProductCreateRequest {
     
     @NotNull(message = "Category ID is required")
     private Long categoryId;
-    
+    private Long brandId;
     @NotBlank(message = "Product name is required")
     @Size(min = 2, max = 200, message = "Name must be between 2 and 200 characters")
     private String name;

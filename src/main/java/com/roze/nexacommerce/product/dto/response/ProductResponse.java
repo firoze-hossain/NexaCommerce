@@ -21,6 +21,9 @@ public class ProductResponse {
     private String vendorName;
     private Long categoryId;
     private String categoryName;
+    private Long brandId;
+    private String brandName;
+    private String brandSlug;
     private String name;
     private String description;
     private String shortDescription;

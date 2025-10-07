@@ -1,5 +1,7 @@
 package com.roze.nexacommerce.product.service.impl;
 
+import com.roze.nexacommerce.brand.entity.Brand;
+import com.roze.nexacommerce.brand.repository.BrandRepository;
 import com.roze.nexacommerce.category.entity.Category;
 import com.roze.nexacommerce.category.repository.CategoryRepository;
 import com.roze.nexacommerce.common.PaginatedResponse;
@@ -42,6 +44,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
     private final ProductAttributeRepository productAttributeRepository;
     private final ProductImageRepository productImageRepository;
+    private final BrandRepository brandRepository;
 
     @Override
     @Transactional
@@ -62,10 +65,15 @@ public class ProductServiceImpl implements ProductService {
         // Get category
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.getCategoryId()));
-
+        Brand brand = null;
+        if (request.getBrandId() != null) {
+            brand = brandRepository.findById(request.getBrandId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Brand", "id", request.getBrandId()));
+        }
         Product product = productMapper.toEntity(request);
         product.setVendor(vendor);
         product.setCategory(category);
+        product.setBrand(brand);
 
         // Set images and attributes relationships
         product.getImages().forEach(image -> image.setProduct(product));
@@ -163,7 +171,12 @@ public class ProductServiceImpl implements ProductService {
                     .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.getCategoryId()));
             product.setCategory(category);
         }
-
+        Brand brand = null;
+        if (request.getBrandId() != null) {
+            brand = brandRepository.findById(request.getBrandId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Brand", "id", request.getBrandId()));
+        }
+        product.setBrand(brand);
         // Update basic fields
         productMapper.updateEntity(request, product);
 

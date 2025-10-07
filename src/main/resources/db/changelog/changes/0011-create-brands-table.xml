@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- ============================================= -->
+    <!-- Author: Md. Firoze Hossain                    -->
+    <!-- Description: Create brands table schema       -->
+    <!-- ============================================= -->
+
+    <changeSet id="0011-create-brands-table" author="Md. Firoze Hossain" created="08-10-2025">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="brands"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="brands">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="slug" type="varchar(255)">
+                <constraints unique="true"/>
+            </column>
+
+            <column name="description" type="text"/>
+            <column name="logo_url" type="varchar(255)"/>
+            <column name="website_url" type="varchar(255)"/>
+            <column name="featured" type="boolean" defaultValueBoolean="false"/>
+            <column name="active" type="boolean" defaultValueBoolean="true"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================= -->
+    <!-- Link Products to Brands (already supported)   -->
+    <!-- ============================================= -->
+    <changeSet id="0012-add-brand-foreignkey-to-products" author="Md. Firoze Hossain" created="08-10-2025">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="products" columnName="brand_id"/>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="products"
+                baseColumnNames="brand_id"
+                constraintName="fk_products_brand_id"
+                referencedTableName="brands"
+                referencedColumnNames="id"/>
+    </changeSet>
+    <changeSet id="0012-add-brand-field-to-products" author="Md. Firoze Hossain" created="08-10-2025">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="brands"/>
+            <tableExists tableName="products"/>
+        </preConditions>
+
+        <addColumn tableName="products">
+            <column name="brand_id" type="bigint"/>
+        </addColumn>
+
+        <addForeignKeyConstraint
+                baseTableName="products"
+                baseColumnNames="brand_id"
+                constraintName="fk_products_brand_id"
+                referencedTableName="brands"
+                referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>
