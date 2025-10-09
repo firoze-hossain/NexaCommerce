@@ -82,7 +82,16 @@ public class ProductController extends BaseController {
         PaginatedResponse<ProductResponse> products = productService.getProductsByCategory(categoryId, pageable);
         return paginated(products, "Category products retrieved successfully");
     }
+    @GetMapping("/brand/{brandId}")
+    public ResponseEntity<BaseResponse<PaginatedResponse<ProductResponse>>> getProductsByBrand(
+            @PathVariable Long brandId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
 
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        PaginatedResponse<ProductResponse> products = productService.getProductsByBrand(brandId, pageable);
+        return paginated(products, "Brand products retrieved successfully");
+    }
     @GetMapping("/status")
     @PreAuthorize("hasAuthority('READ_PRODUCT')")
     public ResponseEntity<BaseResponse<PaginatedResponse<ProductResponse>>> getProductsByStatus(

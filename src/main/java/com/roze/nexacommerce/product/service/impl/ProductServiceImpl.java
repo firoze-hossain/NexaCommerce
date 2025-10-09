@@ -310,6 +310,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public PaginatedResponse<ProductResponse> getProductsByBrand(Long brandId, Pageable pageable) {
+        Brand brand = brandRepository.findById(brandId)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand", "id", brandId));
+
+        Page<Product> productPage = productRepository.findActiveProductsByBrand(brand, pageable);
+        return buildPaginatedResponse(productPage);
+    }
+
+    @Override
     @Transactional
     public ProductResponse updateProductStatus(Long productId, ProductStatus status) {
         Product product = productRepository.findById(productId)
