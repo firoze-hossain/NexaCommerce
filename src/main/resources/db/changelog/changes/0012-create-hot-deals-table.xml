@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- ============================================= -->
+    <!-- Author: Md. Firoze Hossain                    -->
+    <!-- Description: Create hot_deals table schema    -->
+    <!-- ============================================= -->
+
+    <changeSet id="0013-create-hot-deals-table" author="Md. Firoze Hossain" created="08-10-2025">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="hot_deals"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="hot_deals">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign key to products table -->
+            <column name="product_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Discount type enum -->
+            <column name="discount_type" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Pricing columns -->
+            <column name="discount_value" type="decimal(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_price" type="decimal(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deal_price" type="decimal(10,2)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Date columns -->
+            <column name="start_date" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_date" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Stock management -->
+            <column name="stock_limit" type="integer"/>
+            <column name="sold_count" type="integer" defaultValueNumeric="0"/>
+
+            <!-- Status flag -->
+            <column name="is_active" type="boolean" defaultValueBoolean="true"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+
+        <!-- Add foreign key constraint -->
+        <addForeignKeyConstraint
+                baseTableName="hot_deals"
+                baseColumnNames="product_id"
+                constraintName="fk_hot_deals_product_id"
+                referencedTableName="products"
+                referencedColumnNames="id"/>
+
+        <!-- Add index for better query performance -->
+        <createIndex tableName="hot_deals" indexName="idx_hot_deals_product_id">
+            <column name="product_id"/>
+        </createIndex>
+
+        <createIndex tableName="hot_deals" indexName="idx_hot_deals_dates_active">
+            <column name="start_date"/>
+            <column name="end_date"/>
+            <column name="is_active"/>
+        </createIndex>
+
+        <createIndex tableName="hot_deals" indexName="idx_hot_deals_active_status">
+            <column name="is_active"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
