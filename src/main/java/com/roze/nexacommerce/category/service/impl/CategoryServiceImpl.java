@@ -33,13 +33,13 @@ public class CategoryServiceImpl implements CategoryService {
         if (categoryRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Category", "name", request.getName());
         }
-        
+
         if (request.getSlug() != null && categoryRepository.existsBySlug(request.getSlug())) {
             throw new DuplicateResourceException("Category", "slug", request.getSlug());
         }
 
         Category category = categoryMapper.toEntity(request);
-        
+
         // Set parent if provided
         if (request.getParentId() != null) {
             Category parent = categoryRepository.findById(request.getParentId())
@@ -75,9 +75,12 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public PaginatedResponse<CategoryResponse> getCategories(Pageable pageable) {
         Page<Category> categoryPage = categoryRepository.findAll(pageable);
-        List<CategoryResponse> categoryResponses = categoryPage.getContent().stream()
-                .map(categoryMapper::toResponse)
-                .collect(Collectors.toList());
+//        List<CategoryResponse> categoryResponses = categoryPage.getContent().stream()
+//                .map(categoryMapper::toResponse)
+//                .collect(Collectors.toList());
+        // Use batch mapping for better performance
+        List<CategoryResponse> categoryResponses = categoryMapper.toResponseList(categoryPage.getContent());
+
 
         return PaginatedResponse.<CategoryResponse>builder()
                 .items(categoryResponses)
@@ -124,18 +127,18 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
 
         // Validate unique constraints
-        if (request.getName() != null && !request.getName().equals(category.getName()) 
+        if (request.getName() != null && !request.getName().equals(category.getName())
                 && categoryRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Category", "name", request.getName());
         }
-        
-        if (request.getSlug() != null && !request.getSlug().equals(category.getSlug()) 
+
+        if (request.getSlug() != null && !request.getSlug().equals(category.getSlug())
                 && categoryRepository.existsBySlug(request.getSlug())) {
             throw new DuplicateResourceException("Category", "slug", request.getSlug());
         }
 
         categoryMapper.updateEntity(request, category);
-        
+
         // Update parent if provided
         if (request.getParentId() != null) {
             Category parent = categoryRepository.findById(request.getParentId())
@@ -154,20 +157,20 @@ public class CategoryServiceImpl implements CategoryService {
     public void deleteCategory(Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
-        
+
         // Check if category has products
         Long productCount = categoryRepository.countActiveProductsByCategory(category);
         if (productCount > 0) {
             throw new IllegalStateException("Cannot delete category with associated products");
         }
-        
+
         // Handle child categories - move them to parent or make them root
         if (!category.getChildren().isEmpty()) {
             for (Category child : category.getChildren()) {
                 child.setParent(category.getParent());
             }
         }
-        
+
         categoryRepository.delete(category);
     }
 
@@ -176,10 +179,10 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse toggleCategoryStatus(Long categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", categoryId));
-        
+
         category.setActive(!category.getActive());
         Category updatedCategory = categoryRepository.save(category);
-        
+
         return categoryMapper.toResponse(updatedCategory);
     }
 }
