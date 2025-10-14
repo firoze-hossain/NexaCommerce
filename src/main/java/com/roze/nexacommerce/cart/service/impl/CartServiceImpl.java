@@ -37,7 +37,7 @@ public class CartServiceImpl implements CartService {
     private final UserRepository userRepository;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional//(readOnly = true)
     public CartResponse getCartByCustomer(Long customerId) {
         CustomerProfile customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
@@ -49,7 +49,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional //(readOnly = true)
     public CartResponse getCartBySession(String sessionId) {
         Cart cart = cartRepository.findBySessionId(sessionId)
                 .orElseGet(() -> createNewGuestCart(sessionId));
