@@ -22,7 +22,7 @@ public class WishlistController extends BaseController {
     private final WishlistService wishlistService;
 
     @PostMapping
-    @PreAuthorize("@securityService.isCurrentUser(#customerId)")
+    @PreAuthorize("@securityService.isCurrentCustomer()")
     public ResponseEntity<BaseResponse<WishlistResponse>> addToWishlist(
             @PathVariable Long customerId,
             @Valid @RequestBody WishlistRequest request) {
@@ -30,22 +30,22 @@ public class WishlistController extends BaseController {
         return created(response, "Product added to wishlist successfully");
     }
 
-//    @DeleteMapping("/products/{productId}")
-//    @PreAuthorize("@securityService.isCurrentUser(#customerId)")
-//    public ResponseEntity<BaseResponse<Void>> removeFromWishlist(
-//            @PathVariable Long customerId,
-//            @PathVariable Long productId) {
-//        wishlistService.removeFromWishlist(customerId, productId);
-//        return noContent("Product removed from wishlist successfully");
-//    }
+    @DeleteMapping("/products/{productId}")
+    @PreAuthorize("@securityService.isCurrentCustomer()")
+    public ResponseEntity<BaseResponse<Void>> removeFromWishlist(
+            @PathVariable Long customerId,
+            @PathVariable Long productId) {
+        wishlistService.removeFromWishlist(customerId, productId);
+        return noContent("Product removed from wishlist successfully");
+    }
 
     @GetMapping
-    @PreAuthorize("@securityService.isCurrentUser(#customerId)")
+    @PreAuthorize("@securityService.isCurrentCustomer()")
     public ResponseEntity<BaseResponse<PaginatedResponse<WishlistResponse>>> getWishlist(
             @PathVariable Long customerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "addedAt") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection) {
 
         Sort sort = sortDirection.equalsIgnoreCase("desc") ?
@@ -55,17 +55,17 @@ public class WishlistController extends BaseController {
         return paginated(wishlist, "Wishlist retrieved successfully");
     }
 
-//    @GetMapping("/products/{productId}/exists")
-//    @PreAuthorize("@securityService.isCurrentUser(#customerId)")
-//    public ResponseEntity<BaseResponse<Boolean>> checkProductInWishlist(
-//            @PathVariable Long customerId,
-//            @PathVariable Long productId) {
-//        boolean exists = wishlistService.isProductInWishlist(customerId, productId);
-//        return ok(exists, "Product existence in wishlist checked successfully");
-//    }
+    @GetMapping("/products/{productId}/exists")
+    @PreAuthorize("@securityService.isCurrentCustomer()")
+    public ResponseEntity<BaseResponse<Boolean>> checkProductInWishlist(
+            @PathVariable Long customerId,
+            @PathVariable Long productId) {
+        boolean exists = wishlistService.isProductInWishlist(customerId, productId);
+        return ok(exists, "Product existence in wishlist checked successfully");
+    }
 
     @GetMapping("/count")
-    @PreAuthorize("@securityService.isCurrentUser(#customerId)")
+    @PreAuthorize("@securityService.isCurrentCustomer()")
     public ResponseEntity<BaseResponse<Long>> getWishlistCount(@PathVariable Long customerId) {
         Long count = wishlistService.getWishlistCount(customerId);
         return ok(count, "Wishlist count retrieved successfully");

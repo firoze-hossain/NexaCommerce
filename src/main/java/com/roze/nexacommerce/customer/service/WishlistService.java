@@ -8,11 +8,11 @@ import org.springframework.data.domain.Pageable;
 public interface WishlistService {
     WishlistResponse addToWishlist(Long customerId, WishlistRequest request);
 
-//    void removeFromWishlist(Long customerId, Long productId);
+    void removeFromWishlist(Long customerId, Long productId);
 
     PaginatedResponse<WishlistResponse> getCustomerWishlist(Long customerId, Pageable pageable);
 
-//    boolean isProductInWishlist(Long customerId, Long productId);
+    boolean isProductInWishlist(Long customerId, Long productId);
 
     Long getWishlistCount(Long customerId);
 }

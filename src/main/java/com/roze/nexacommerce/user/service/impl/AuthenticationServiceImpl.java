@@ -1,5 +1,7 @@
 package com.roze.nexacommerce.user.service.impl;
 
+import com.roze.nexacommerce.customer.entity.CustomerProfile;
+import com.roze.nexacommerce.customer.repository.CustomerProfileRepository;
 import com.roze.nexacommerce.exception.AuthenticationException;
 import com.roze.nexacommerce.exception.ResourceNotFoundException;
 import com.roze.nexacommerce.exception.ValidationException;
@@ -12,6 +14,8 @@ import com.roze.nexacommerce.user.entity.Role;
 import com.roze.nexacommerce.user.entity.User;
 import com.roze.nexacommerce.user.repository.UserRepository;
 import com.roze.nexacommerce.user.service.AuthenticationService;
+import com.roze.nexacommerce.vendor.entity.VendorProfile;
+import com.roze.nexacommerce.vendor.repository.VendorProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +24,7 @@ import org.springframework.security.authentication.*;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -31,7 +36,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final RedisTemplate<String, String> redisTemplate;
     private static final String BLACKLIST_PREFIX = "blacklist";
-
+    private final CustomerProfileRepository customerProfileRepository;
+    private final VendorProfileRepository vendorProfileRepository;
     @Value("${application.security.jwt.expiration}")
     private Long jwtExpiration;
 
@@ -62,12 +68,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String refreshToken = jwtUtil.generateRefreshToken(user);
 
         log.info("✅ Login successful for user: {}, Token generated", user.getEmail());
-
+        // Get customer and vendor profiles
+        Optional<CustomerProfile> customerProfile = customerProfileRepository.findByUserEmail(user.getEmail());
+        Optional<VendorProfile> vendorProfile = vendorProfileRepository.findByUserEmail(user.getEmail());
+// Build user response with customer and vendor IDs
+        UserResponse userResponse = mapToUserResponse(user);
+        customerProfile.ifPresent(profile -> userResponse.setCustomerId(profile.getId()));
+        vendorProfile.ifPresent(profile -> userResponse.setVendorId(profile.getId()));
+        // Build user response with customer and vendor IDs
         return LoginResponse.builder()
                 .token(jwtToken)
                 .refreshToken(refreshToken)
-                .expiresIn(jwtExpiration/1000)
-                .user(mapToUserResponse(user))
+                .expiresIn(jwtExpiration / 1000)
+                .user(userResponse)
                 .build();
     }
 
@@ -149,6 +162,31 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             log.error("❌ Logout failed: {}", e.getMessage(), e);
             throw new AuthenticationException("Logout failed");
         }
+    }
+
+    @Override
+    public UserResponse getCurrentUser(String email) {
+        log.info("👤 Getting current user for email: {}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.error("❌ User not found: {}", email);
+                    return new ResourceNotFoundException("User not found");
+                });
+
+        // Get customer profile if exists
+        Optional<CustomerProfile> customerProfile = customerProfileRepository.findByUserEmail(email);
+        Optional<VendorProfile> vendorProfile = vendorProfileRepository.findByUserEmail(email);
+
+        UserResponse userResponse = mapToUserResponse(user);
+
+        // Add customer ID if customer profile exists
+        customerProfile.ifPresent(profile -> userResponse.setCustomerId(profile.getId()));
+        // Add vendor ID if vendor profile exists
+        vendorProfile.ifPresent(profile -> userResponse.setVendorId(profile.getId()));
+
+        log.info("✅ Current user retrieved successfully: {}", email);
+        return userResponse;
     }
 
     @Override

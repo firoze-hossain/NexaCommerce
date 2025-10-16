@@ -17,6 +17,8 @@ public class UserResponse {
     private String email;
     private RoleResponse role;
     private Boolean active;
+    private Long customerId;
+    private Long vendorId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

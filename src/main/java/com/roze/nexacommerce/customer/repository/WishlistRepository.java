@@ -14,13 +14,13 @@ import java.util.Optional;
 public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     Page<Wishlist> findByCustomerId(Long customerId, Pageable pageable);
 
-//    Optional<Wishlist> findByCustomerIdAndProductId(Long customerId, Long productId);
-//
-//    boolean existsByCustomerIdAndProductId(Long customerId, Long productId);
+    Optional<Wishlist> findByCustomerIdAndProductId(Long customerId, Long productId);
 
-//    @Modifying
-//    @Query("DELETE FROM Wishlist w WHERE w.customer.id = :customerId AND w.product.id = :productId")
-//    void deleteByCustomerIdAndProductId(Long customerId, Long productId);
+    boolean existsByCustomerIdAndProductId(Long customerId, Long productId);
+
+    @Modifying
+    @Query("DELETE FROM Wishlist w WHERE w.customer.id = :customerId AND w.product.id = :productId")
+    void deleteByCustomerIdAndProductId(Long customerId, Long productId);
 
     @Query("SELECT COUNT(w) FROM Wishlist w WHERE w.customer.id = :customerId")
     Long countByCustomerId(Long customerId);
