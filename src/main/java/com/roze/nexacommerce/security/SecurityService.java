@@ -3,6 +3,9 @@ package com.roze.nexacommerce.security;
 import com.roze.nexacommerce.common.address.repository.AddressRepository;
 import com.roze.nexacommerce.customer.entity.CustomerProfile;
 import com.roze.nexacommerce.customer.repository.CustomerProfileRepository;
+import com.roze.nexacommerce.exception.ResourceNotFoundException;
+import com.roze.nexacommerce.review.entity.Review;
+import com.roze.nexacommerce.review.repository.ReviewRepository;
 import com.roze.nexacommerce.user.entity.User;
 import com.roze.nexacommerce.user.repository.UserRepository;
 import com.roze.nexacommerce.vendor.repository.VendorProfileRepository;
@@ -20,6 +23,7 @@ public class SecurityService {
     private final VendorProfileRepository vendorRepository;
     private final AddressRepository addressRepository;
     private final CustomerProfileRepository customerRepository;
+    private final ReviewRepository reviewRepository;
 
     public boolean isCurrentUser(Long userId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -139,4 +143,28 @@ public class SecurityService {
         Optional<CustomerProfile> customer = customerRepository.findByUserEmail(currentUsername);
         return customer.map(CustomerProfile::getId).orElse(null);
     }
+
+//    public boolean isReviewOwner(Long reviewId, Long customerId) {
+//        try {
+//            Review review = reviewRepository.findById(reviewId)
+//                    .orElseThrow(() -> new ResourceNotFoundException("Review", "id", reviewId));
+//            return review.getCustomer().getId().equals(customerId);
+//        } catch (ResourceNotFoundException e) {
+//            return false;
+//        }
+//    }
+public boolean isReviewOwner(Long reviewId) {
+    Long customerId = getCurrentCustomerId();
+    if (customerId == null) {
+        return false;
+    }
+
+    try {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Review", "id", reviewId));
+        return review.getCustomer().getId().equals(customerId);
+    } catch (ResourceNotFoundException e) {
+        return false;
+    }
+}
 }

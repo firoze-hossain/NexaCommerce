@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- ============================================= -->
+    <!-- Author: Md. Firoze Hossain                    -->
+    <!-- Description: Create reviews table schema      -->
+    <!-- ============================================= -->
+
+    <changeSet id="0014-create-reviews-table" author="Md. Firoze Hossain" created="08-10-2025">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="reviews"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="reviews">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign key to products table -->
+            <column name="product_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Foreign key to customer_profile table -->
+            <column name="customer_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Review content -->
+            <column name="rating" type="integer">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="comment" type="text"/>
+
+            <column name="title" type="varchar(255)"/>
+
+            <!-- Review status and verification -->
+            <column name="verified_purchase" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Helpful counts -->
+            <column name="helpful_count" type="integer" defaultValueNumeric="0"/>
+            <column name="not_helpful_count" type="integer" defaultValueNumeric="0"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+
+        <!-- Add foreign key constraints -->
+        <addForeignKeyConstraint
+                baseTableName="reviews"
+                baseColumnNames="product_id"
+                constraintName="fk_reviews_product_id"
+                referencedTableName="products"
+                referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+                baseTableName="reviews"
+                baseColumnNames="customer_id"
+                constraintName="fk_reviews_customer_id"
+                referencedTableName="customers"
+                referencedColumnNames="id"/>
+
+        <!-- Add indexes for better query performance -->
+        <createIndex tableName="reviews" indexName="idx_reviews_product_id">
+            <column name="product_id"/>
+        </createIndex>
+
+        <createIndex tableName="reviews" indexName="idx_reviews_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+
+        <createIndex tableName="reviews" indexName="idx_reviews_rating">
+            <column name="rating"/>
+        </createIndex>
+
+        <createIndex tableName="reviews" indexName="idx_reviews_active_verified">
+            <column name="active"/>
+            <column name="verified_purchase"/>
+        </createIndex>
+
+        <createIndex tableName="reviews" indexName="idx_reviews_product_rating">
+            <column name="product_id"/>
+            <column name="rating"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ============================================= -->
+    <!-- Author: Md. Firoze Hossain                    -->
+    <!-- Description: Create review_helpful_votes table -->
+    <!-- ============================================= -->
+
+    <changeSet id="0015-create-review-helpful-votes-table" author="Md. Firoze Hossain" created="08-10-2025">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="review_helpful_votes"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="review_helpful_votes">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign key to reviews table -->
+            <column name="review_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Foreign key to customer_profile table -->
+            <column name="customer_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Vote type -->
+            <column name="helpful" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modified_by" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ip_address" type="varchar(45)"/>
+        </createTable>
+
+        <!-- Add foreign key constraints -->
+        <addForeignKeyConstraint
+                baseTableName="review_helpful_votes"
+                baseColumnNames="review_id"
+                constraintName="fk_review_votes_review_id"
+                referencedTableName="reviews"
+                referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+                baseTableName="review_helpful_votes"
+                baseColumnNames="customer_id"
+                constraintName="fk_review_votes_customer_id"
+                referencedTableName="customers"
+                referencedColumnNames="id"/>
+
+        <!-- Add unique constraint for one vote per customer per review -->
+        <addUniqueConstraint
+                tableName="review_helpful_votes"
+                columnNames="review_id, customer_id"
+                constraintName="uc_review_votes_review_customer"/>
+
+        <!-- Add indexes for better query performance -->
+        <createIndex tableName="review_helpful_votes" indexName="idx_review_votes_review_id">
+            <column name="review_id"/>
+        </createIndex>
+
+        <createIndex tableName="review_helpful_votes" indexName="idx_review_votes_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+
+        <createIndex tableName="review_helpful_votes" indexName="idx_review_votes_helpful">
+            <column name="helpful"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
