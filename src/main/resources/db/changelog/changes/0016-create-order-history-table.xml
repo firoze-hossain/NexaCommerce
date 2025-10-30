@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0016-create-order-history-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="order_history"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="order_history">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign keys -->
+            <column name="order_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="user_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- History details -->
+            <column name="action" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="description" type="varchar(500)"/>
+            <column name="old_value" type="text"/>
+            <column name="new_value" type="text"/>
+            <column name="notes" type="text"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <comment>Create order_history table for tracking order status changes and activities</comment>
+
+        <!-- Create indexes for better performance -->
+        <createIndex tableName="order_history" indexName="idx_order_history_order_id">
+            <column name="order_id"/>
+        </createIndex>
+
+        <createIndex tableName="order_history" indexName="idx_order_history_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex tableName="order_history" indexName="idx_order_history_action">
+            <column name="action"/>
+        </createIndex>
+
+        <createIndex tableName="order_history" indexName="idx_order_history_created_at">
+            <column name="created_at"/>
+        </createIndex>
+
+        <createIndex tableName="order_history" indexName="idx_order_history_order_created">
+            <column name="order_id"/>
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

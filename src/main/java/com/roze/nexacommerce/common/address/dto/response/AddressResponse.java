@@ -1,6 +1,5 @@
 package com.roze.nexacommerce.common.address.dto.response;
 
-import com.roze.nexacommerce.common.address.enums.AddressType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,17 +13,29 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AddressResponse {
     private Long id;
-    private AddressType addressType;
-    private String street;
+    private String addressType;
+    private String fullName;
+    private String phone;
+    private String area;
+    private String addressLine;
     private String city;
-    private String state;
-    private String country;
-    private String zipCode;
     private String landmark;
     private Boolean isDefault;
-    private String contactName;
-    private String contactPhone;
-    private String companyName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public String getFullAddress() {
+        StringBuilder address = new StringBuilder();
+        address.append(addressLine);
+        if (area != null && !area.isEmpty()) {
+            address.append(", ").append(area);
+        }
+        if (city != null && !city.isEmpty()) {
+            address.append(", ").append(city);
+        }
+        if (landmark != null && !landmark.isEmpty()) {
+            address.append(" (Near ").append(landmark).append(")");
+        }
+        return address.toString();
+    }
 }

@@ -31,7 +31,7 @@ public class Order extends BaseEntity {
     private String orderNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @JoinColumn(name = "customer_id")
     private CustomerProfile customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -65,6 +65,38 @@ public class Order extends BaseEntity {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal finalAmount;
 
+    // Guest order fields
+    @Column(name = "guest_email")
+    private String guestEmail;
+
+    @Column(name = "guest_name")
+    private String guestName;
+
+    @Column(name = "guest_phone")
+    private String guestPhone;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "fullName", column = @Column(name = "shipping_full_name")),
+            @AttributeOverride(name = "phone", column = @Column(name = "shipping_phone")),
+            @AttributeOverride(name = "area", column = @Column(name = "shipping_area")),
+            @AttributeOverride(name = "addressLine", column = @Column(name = "shipping_address_line")),
+            @AttributeOverride(name = "city", column = @Column(name = "shipping_city")),
+            @AttributeOverride(name = "landmark", column = @Column(name = "shipping_landmark"))
+    })
+    private OrderAddress shippingAddress;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "fullName", column = @Column(name = "billing_full_name")),
+            @AttributeOverride(name = "phone", column = @Column(name = "billing_phone")),
+            @AttributeOverride(name = "area", column = @Column(name = "billing_area")),
+            @AttributeOverride(name = "addressLine", column = @Column(name = "billing_address_line")),
+            @AttributeOverride(name = "city", column = @Column(name = "billing_city")),
+            @AttributeOverride(name = "landmark", column = @Column(name = "billing_landmark"))
+    })
+    private OrderAddress billingAddress;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -75,12 +107,6 @@ public class Order extends BaseEntity {
     @Builder.Default
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
-    @Embedded
-    private ShippingAddress shippingAddress;
-
-    @Embedded
-    private BillingAddress billingAddress;
-
     @Column(columnDefinition = "TEXT")
     private String customerNotes;
 
@@ -88,7 +114,7 @@ public class Order extends BaseEntity {
     private String internalNotes;
 
     private String couponCode;
-    
+
     @Column(precision = 12, scale = 2)
     private BigDecimal couponDiscount;
 
@@ -127,19 +153,12 @@ public class Order extends BaseEntity {
         return status == OrderStatus.PENDING || status == OrderStatus.CONFIRMED;
     }
 
+    public boolean isGuestOrder() {
+        return customer == null && guestEmail != null;
+    }
+
     public boolean isPaid() {
         return paymentStatus == PaymentStatus.PAID || paymentStatus == PaymentStatus.REFUNDED;
-    }
-
-    public boolean isCompleted() {
-        return status == OrderStatus.DELIVERED || status == OrderStatus.CANCELLED;
-    }
-
-    @PostPersist
-    public void updateCustomerStats() {
-        if (paymentStatus == PaymentStatus.PAID && status == OrderStatus.DELIVERED) {
-            customer.addOrderAmount(finalAmount);
-        }
     }
 
     @Override

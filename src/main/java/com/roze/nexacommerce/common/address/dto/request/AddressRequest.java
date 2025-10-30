@@ -1,9 +1,9 @@
 package com.roze.nexacommerce.common.address.dto.request;
 
-
 import com.roze.nexacommerce.common.address.enums.AddressType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,30 +14,28 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AddressRequest {
-    @NotNull(message = "Address type is required")
+
+    @NotBlank(message = "Address type is required")
     private AddressType addressType;
 
-    @NotBlank(message = "Street is required")
-    private String street;
+    @NotBlank(message = "Full name is required")
+    private String fullName;
 
-    @NotBlank(message = "City is required")
+    @NotBlank(message = "Phone number is required")
+    @Pattern(regexp = "01[3-9]\\d{8}", message = "Please enter a valid Bangladeshi phone number")
+    private String phone;
+
+    @NotBlank(message = "Area is required")
+    private String area;
+
+    @NotBlank(message = "Address line is required")
+    private String addressLine;
+
     private String city;
 
-    @NotBlank(message = "State is required")
-    private String state;
-
-    @NotBlank(message = "Country is required")
-    private String country;
-
-    @NotBlank(message = "Zip code is required")
-    private String zipCode;
-
     private String landmark;
-    
-    @NotNull(message = "Is default flag is required")
-    private Boolean isDefault;
 
-    private String contactName;
-    private String contactPhone;
-    private String companyName;
+    @Builder.Default
+    @NotNull(message = "Is default flag is required")
+    private Boolean isDefault = false;
 }

@@ -4,7 +4,6 @@ import com.roze.nexacommerce.common.BaseController;
 import com.roze.nexacommerce.common.BaseResponse;
 import com.roze.nexacommerce.common.address.dto.request.AddressRequest;
 import com.roze.nexacommerce.common.address.dto.response.AddressResponse;
-import com.roze.nexacommerce.common.address.enums.AddressType;
 import com.roze.nexacommerce.common.address.service.AddressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,15 +35,6 @@ public class AddressController extends BaseController {
         return ok(addresses, "Addresses retrieved successfully");
     }
 
-    @GetMapping("/users/{userId}/type/{addressType}")
-    @PreAuthorize("hasAuthority('READ_ADDRESS') or @securityService.isCurrentUser(#userId)")
-    public ResponseEntity<BaseResponse<List<AddressResponse>>> getUserAddressesByType(
-            @PathVariable Long userId,
-            @PathVariable AddressType addressType) {
-        List<AddressResponse> addresses = addressService.getUserAddressesByType(userId, addressType);
-        return ok(addresses, "Addresses retrieved successfully");
-    }
-
     @GetMapping("/{addressId}")
     @PreAuthorize("hasAuthority('READ_ADDRESS') or @securityService.isAddressOwner(#addressId)")
     public ResponseEntity<BaseResponse<AddressResponse>> getAddressById(@PathVariable Long addressId) {
@@ -52,14 +42,12 @@ public class AddressController extends BaseController {
         return ok(address, "Address retrieved successfully");
     }
 
-    @GetMapping("/users/{userId}/default/{addressType}")
+    @GetMapping("/users/{userId}/default")
     @PreAuthorize("hasAuthority('READ_ADDRESS') or @securityService.isCurrentUser(#userId)")
-    public ResponseEntity<BaseResponse<AddressResponse>> getDefaultAddress(
-            @PathVariable Long userId,
-            @PathVariable AddressType addressType) {
-        AddressResponse address = addressService.getDefaultAddress(userId, addressType);
+    public ResponseEntity<BaseResponse<AddressResponse>> getDefaultAddress(@PathVariable Long userId) {
+        AddressResponse address = addressService.getDefaultAddress(userId);
         if (address == null) {
-            return notFound("No default address found for the specified type");
+            return notFound("No default address found");
         }
         return ok(address, "Default address retrieved successfully");
     }
@@ -85,5 +73,25 @@ public class AddressController extends BaseController {
     public ResponseEntity<BaseResponse<Void>> deleteAddress(@PathVariable Long addressId) {
         addressService.deleteAddress(addressId);
         return noContent("Address deleted successfully");
+    }
+
+    // PUBLIC ENDPOINTS
+    @GetMapping("/bangladesh/areas")
+    public ResponseEntity<BaseResponse<List<String>>> getPopularAreas() {
+        List<String> areas = List.of(
+                "Mirpur", "Dhanmondi", "Gulshan", "Banani", "Uttara", "Mohakhali",
+                "Motijheel", "Farmgate", "Malibagh", "Shyamoli", "Mohammadpur",
+                "Old Dhaka", "Basundhara", "Baridhara", "Rampura", "Badda"
+        );
+        return ok(areas, "Popular areas retrieved successfully");
+    }
+
+    @GetMapping("/bangladesh/cities")
+    public ResponseEntity<BaseResponse<List<String>>> getBangladeshCities() {
+        List<String> cities = List.of(
+                "Dhaka", "Chittagong", "Sylhet", "Rajshahi", "Khulna",
+                "Barisal", "Rangpur", "Mymensingh", "Comilla", "Narayanganj"
+        );
+        return ok(cities, "Bangladesh cities retrieved successfully");
     }
 }

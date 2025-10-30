@@ -79,7 +79,13 @@ public class AddressServiceImpl implements AddressService {
                 .map(addressMapper::toResponse)
                 .orElse(null);
     }
-
+    @Override
+    public AddressResponse getDefaultAddress(Long userId) {
+        // Get any default address regardless of type
+        return addressRepository.findByUserIdAndIsDefault(userId, true)
+                .map(addressMapper::toResponse)
+                .orElse(null);
+    }
     @Override
     @Transactional
     public AddressResponse updateAddress(Long addressId, AddressRequest request) {

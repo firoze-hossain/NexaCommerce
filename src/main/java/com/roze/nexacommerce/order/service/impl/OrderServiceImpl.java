@@ -6,6 +6,7 @@ import com.roze.nexacommerce.common.address.service.AddressService;
 import com.roze.nexacommerce.customer.entity.CustomerProfile;
 import com.roze.nexacommerce.customer.repository.CustomerProfileRepository;
 import com.roze.nexacommerce.exception.ResourceNotFoundException;
+import com.roze.nexacommerce.order.dto.request.GuestOrderCreateRequest;
 import com.roze.nexacommerce.order.dto.request.OrderCreateRequest;
 import com.roze.nexacommerce.order.dto.request.OrderItemRequest;
 import com.roze.nexacommerce.order.dto.response.OrderResponse;
@@ -15,16 +16,11 @@ import com.roze.nexacommerce.order.enums.OrderSource;
 import com.roze.nexacommerce.order.enums.OrderStatus;
 import com.roze.nexacommerce.order.enums.PaymentStatus;
 import com.roze.nexacommerce.order.mapper.OrderMapper;
-import com.roze.nexacommerce.order.repository.OrderHistoryRepository;
-import com.roze.nexacommerce.order.repository.OrderItemRepository;
 import com.roze.nexacommerce.order.repository.OrderRepository;
-import com.roze.nexacommerce.order.service.OrderAddressService;
 import com.roze.nexacommerce.order.service.OrderService;
 import com.roze.nexacommerce.product.entity.Product;
 import com.roze.nexacommerce.product.repository.ProductRepository;
-import com.roze.nexacommerce.user.repository.UserRepository;
 import com.roze.nexacommerce.vendor.entity.VendorProfile;
-import com.roze.nexacommerce.vendor.repository.VendorProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -43,73 +39,37 @@ import java.util.UUID;
 @Slf4j
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final OrderHistoryRepository orderHistoryRepository;
     private final CustomerProfileRepository customerRepository;
     private final ProductRepository productRepository;
-    private final VendorProfileRepository vendorRepository;
-    private final UserRepository userRepository;
     private final OrderMapper orderMapper;
-    private final OrderAddressService orderAddressService;
     private final AddressService addressService;
 
     @Override
     @Transactional
     public OrderResponse createOrder(Long customerId, OrderCreateRequest request) {
-        // Validate address ownership at the beginning
+        log.info("Creating order for customer ID: {}", customerId);
+
+        // Validate address ownership
         validateAddressOwnership(customerId, request.getShippingAddressId());
-        if (!request.shouldUseShippingAsBilling()) {
-            validateAddressOwnership(customerId, request.getBillingAddressId());
-        }
+
         CustomerProfile customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
-        // Validate addresses and create embedded addresses
-        ShippingAddress shippingAddress = orderAddressService.createShippingAddress(request.getShippingAddressId());
 
-        BillingAddress billingAddress;
-        if (request.shouldUseShippingAsBilling()) {
-            billingAddress = orderAddressService.createBillingAddressFromShipping(shippingAddress);
-        } else {
-            billingAddress = orderAddressService.createBillingAddress(request.getBillingAddressId());
-        }
-        // Validate and process order items
-        List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        // Get address and create order address
+        Address address = addressService.getAddressEntityById(request.getShippingAddressId());
+        OrderAddress orderAddress = OrderAddress.builder()
+                .fullName(address.getFullName())
+                .phone(address.getPhone())
+                .area(address.getArea())
+                .addressLine(address.getAddressLine())
+                .city(address.getCity())
+                .landmark(address.getLandmark())
+                .build();
 
-        for (OrderItemRequest itemRequest : request.getItems()) {
-            Product product = productRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product", "id", itemRequest.getProductId()));
+        // Process order items
+        List<OrderItem> orderItems = processOrderItems(request.getItems());
 
-            if (!product.isAvailable()) {
-                throw new IllegalStateException("Product is not available: " + product.getName());
-            }
-
-            if (product.getTrackQuantity() && !product.getAllowBackorder() &&
-                    product.getStock() < itemRequest.getQuantity()) {
-                throw new IllegalStateException("Insufficient stock for product: " + product.getName());
-            }
-
-            // Update product stock
-            if (product.getTrackQuantity()) {
-                product.setStock(product.getStock() - itemRequest.getQuantity());
-                productRepository.save(product);
-            }
-
-            OrderItem orderItem = OrderItem.builder()
-                    .product(product)
-                    .quantity(itemRequest.getQuantity())
-                    .price(product.getPrice())
-                    .compareAtPrice(product.getCompareAtPrice())
-                    .productName(product.getName())
-                    .productSku(product.getSku())
-                    .productImage(!product.getImages().isEmpty() ? product.getImages().get(0).getImageUrl() : null)
-                    .build();
-
-            orderItems.add(orderItem);
-            totalAmount = totalAmount.add(orderItem.getSubtotal());
-        }
-
-        // Get vendor from first product (assuming single vendor per order for simplicity)
+        // Get vendor from first product
         VendorProfile vendor = orderItems.get(0).getProduct().getVendor();
 
         // Create order
@@ -118,23 +78,20 @@ public class OrderServiceImpl implements OrderService {
                 .customer(customer)
                 .vendor(vendor)
                 .source(OrderSource.WEBSTORE)
-                .totalAmount(totalAmount)
+                .totalAmount(calculateTotalAmount(orderItems))
                 .shippingAmount(request.getShippingAmount())
                 .taxAmount(request.getTaxAmount())
                 .discountAmount(request.getDiscountAmount())
                 .couponCode(request.getCouponCode())
-                .couponDiscount(BigDecimal.ZERO) // Calculate based on coupon logic
+                .couponDiscount(BigDecimal.ZERO)
                 .status(OrderStatus.PENDING)
                 .paymentStatus(PaymentStatus.PENDING)
-                .shippingAddress(shippingAddress)  // ← ADD THIS LINE
-                .billingAddress(billingAddress)    // ← ADD THIS LINE
+                .shippingAddress(orderAddress)
+                .billingAddress(orderAddress) // Same as shipping for simplicity
                 .customerNotes(request.getCustomerNotes())
                 .build();
 
-        // Calculate final amount
         order.calculateTotals();
-
-        // Add order items
         orderItems.forEach(order::addOrderItem);
 
         // Add order history
@@ -146,30 +103,112 @@ public class OrderServiceImpl implements OrderService {
         order.addHistory(history);
 
         Order savedOrder = orderRepository.save(order);
-        log.info("Order created successfully with ID: {} and number: {}", savedOrder.getId(), savedOrder.getOrderNumber());
+        log.info("Order created successfully with ID: {} and number: {}",
+                savedOrder.getId(), savedOrder.getOrderNumber());
+
+        return orderMapper.toResponse(savedOrder);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse createGuestOrder(GuestOrderCreateRequest request) {
+        log.info("Creating guest order for email: {}", request.getGuestEmail());
+
+        // Process order items
+        List<OrderItem> orderItems = processOrderItems(request.getItems());
+
+        // Get vendor from first product
+        VendorProfile vendor = orderItems.get(0).getProduct().getVendor();
+
+        // Create order address from guest address
+        OrderAddress orderAddress = OrderAddress.builder()
+                .fullName(request.getShippingAddress().getFullName())
+                .phone(request.getShippingAddress().getPhone())
+                .area(request.getShippingAddress().getArea())
+                .addressLine(request.getShippingAddress().getAddressLine())
+                .city(request.getShippingAddress().getCity() != null ?
+                        request.getShippingAddress().getCity() : "Dhaka")
+                .landmark(request.getShippingAddress().getLandmark())
+                .build();
+
+        // Create guest order
+        Order order = Order.builder()
+                .orderNumber(generateOrderNumber())
+                .customer(null) // No customer for guest orders
+                .vendor(vendor)
+                .source(OrderSource.WEBSTORE)
+                .totalAmount(calculateTotalAmount(orderItems))
+                .shippingAmount(request.getShippingAmount())
+                .taxAmount(request.getTaxAmount())
+                .discountAmount(request.getDiscountAmount())
+                .couponCode(request.getCouponCode())
+                .couponDiscount(BigDecimal.ZERO)
+                .status(OrderStatus.PENDING)
+                .paymentStatus(PaymentStatus.PENDING)
+                .shippingAddress(orderAddress)
+                .billingAddress(orderAddress)
+                .customerNotes(request.getCustomerNotes())
+                .guestEmail(request.getGuestEmail())
+                .guestName(request.getGuestName())
+                .guestPhone(request.getShippingAddress().getPhone())
+                .build();
+
+        order.calculateTotals();
+        orderItems.forEach(order::addOrderItem);
+
+        // Add order history
+        OrderHistory history = OrderHistory.builder()
+                .order(order)
+                .action(OrderAction.ORDER_CREATED)
+                .description("Guest order created successfully")
+                .build();
+        order.addHistory(history);
+
+        Order savedOrder = orderRepository.save(order);
+        log.info("Guest order created successfully with ID: {} and number: {}",
+                savedOrder.getId(), savedOrder.getOrderNumber());
 
         return orderMapper.toResponse(savedOrder);
     }
 
     @Override
     @Transactional(readOnly = true)
+    public OrderResponse getGuestOrder(String orderNumber, String email) {
+        log.info("Fetching guest order with number: {} and email: {}", orderNumber, email);
+
+        Order order = orderRepository.findByOrderNumberAndGuestEmail(orderNumber, email)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "orderNumber", orderNumber));
+
+        return orderMapper.toResponse(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long orderId) {
+        log.debug("Fetching order by ID: {}", orderId);
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
         return orderMapper.toResponse(order);
     }
 
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getOrderByNumber(String orderNumber) {
+        log.debug("Fetching order by number: {}", orderNumber);
+
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "orderNumber", orderNumber));
+
         return orderMapper.toResponse(order);
     }
 
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getOrderForCustomer(Long customerId, Long orderId) {
+        log.debug("Fetching order ID: {} for customer ID: {}", orderId, customerId);
+
         CustomerProfile customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
 
@@ -186,6 +225,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public PaginatedResponse<OrderResponse> getCustomerOrders(Long customerId, Pageable pageable) {
+        log.debug("Fetching orders for customer ID: {}", customerId);
+
         CustomerProfile customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
 
@@ -207,6 +248,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getRecentOrders(Long customerId, int limit) {
+        log.debug("Fetching recent {} orders for customer ID: {}", limit, customerId);
+
         CustomerProfile customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
 
@@ -221,6 +264,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
+        log.info("Updating order ID: {} status to: {}", orderId, status);
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
@@ -246,6 +291,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {
+        log.info("Updating order ID: {} payment status to: {}", orderId, paymentStatus);
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
@@ -271,10 +318,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse cancelOrder(Long orderId, Long customerId) {
+        log.info("Cancelling order ID: {} for customer ID: {}", orderId, customerId);
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
-        if (!order.getCustomer().getId().equals(customerId)) {
+        // For guest orders, we don't check customer ownership
+        if (order.getCustomer() != null && !order.getCustomer().getId().equals(customerId)) {
             throw new ResourceNotFoundException("Order", "id", orderId);
         }
 
@@ -297,7 +347,7 @@ public class OrderServiceImpl implements OrderService {
         OrderHistory history = OrderHistory.builder()
                 .order(order)
                 .action(OrderAction.STATUS_CHANGED)
-                .description("Order cancelled by customer")
+                .description("Order cancelled by " + (order.isGuestOrder() ? "guest" : "customer"))
                 .oldValue(order.getStatus().name())
                 .newValue(OrderStatus.CANCELLED.name())
                 .build();
@@ -312,10 +362,14 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse addOrderNote(Long orderId, String note) {
+        log.info("Adding note to order ID: {}", orderId);
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
-        order.setInternalNotes(note);
+        String currentNotes = order.getInternalNotes();
+        String newNotes = currentNotes != null ? currentNotes + "\n" + note : note;
+        order.setInternalNotes(newNotes);
 
         // Add history
         OrderHistory history = OrderHistory.builder()
@@ -330,6 +384,52 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toResponse(updatedOrder);
     }
 
+    // ============ HELPER METHODS ============
+
+    private List<OrderItem> processOrderItems(List<OrderItemRequest> itemRequests) {
+        List<OrderItem> orderItems = new ArrayList<>();
+
+        for (OrderItemRequest itemRequest : itemRequests) {
+            Product product = productRepository.findById(itemRequest.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product", "id", itemRequest.getProductId()));
+
+            if (!product.isAvailable()) {
+                throw new IllegalStateException("Product is not available: " + product.getName());
+            }
+
+            if (product.getTrackQuantity() && product.getStock() < itemRequest.getQuantity()) {
+                throw new IllegalStateException("Insufficient stock for product: " + product.getName() +
+                        ". Available: " + product.getStock() + ", Requested: " + itemRequest.getQuantity());
+            }
+
+            // Update product stock
+            if (product.getTrackQuantity()) {
+                product.setStock(product.getStock() - itemRequest.getQuantity());
+                productRepository.save(product);
+            }
+
+            OrderItem orderItem = OrderItem.builder()
+                    .product(product)
+                    .quantity(itemRequest.getQuantity())
+                    .price(product.getPrice())
+                    .compareAtPrice(product.getCompareAtPrice())
+                    .productName(product.getName())
+                    .productSku(product.getSku())
+                    .productImage(!product.getImages().isEmpty() ? product.getImages().get(0).getImageUrl() : null)
+                    .build();
+
+            orderItems.add(orderItem);
+        }
+
+        return orderItems;
+    }
+
+    private BigDecimal calculateTotalAmount(List<OrderItem> orderItems) {
+        return orderItems.stream()
+                .map(OrderItem::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     private String generateOrderNumber() {
         String timestamp = String.valueOf(System.currentTimeMillis());
         String random = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -337,7 +437,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void validateAddressOwnership(Long customerId, Long addressId) {
-        // Get the user ID from customer profile
         CustomerProfile customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
 

@@ -15,7 +15,8 @@ public interface AddressService {
     List<AddressResponse> getUserAddressesByType(Long userId, AddressType addressType);
 
     AddressResponse getAddressById(Long addressId);
-
+    // Overloaded methods for default address
+    AddressResponse getDefaultAddress(Long userId);
     AddressResponse getDefaultAddress(Long userId, AddressType addressType);
 
     AddressResponse updateAddress(Long addressId, AddressRequest request);

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0017-add-orders-foreign-keys" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="orders"/>
+            <tableExists tableName="customer_profile"/>
+            <tableExists tableName="users"/>
+            <tableExists tableName="vendor_profile"/>
+            <tableExists tableName="products"/>
+            <tableExists tableName="order_items"/>
+            <tableExists tableName="order_history"/>
+        </preConditions>
+
+        <comment>Add foreign key constraints for orders and related tables</comment>
+
+        <!-- Add foreign key for orders to customer_profile -->
+        <addForeignKeyConstraint
+                baseTableName="orders"
+                baseColumnNames="customer_id"
+                constraintName="fk_orders_customer_id"
+                referencedTableName="customer_profile"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for orders to users (processed_by) -->
+        <addForeignKeyConstraint
+                baseTableName="orders"
+                baseColumnNames="processed_by"
+                constraintName="fk_orders_processed_by"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for orders to vendor_profile -->
+        <addForeignKeyConstraint
+                baseTableName="orders"
+                baseColumnNames="vendor_id"
+                constraintName="fk_orders_vendor_id"
+                referencedTableName="vendor_profile"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for order_items to orders -->
+        <addForeignKeyConstraint
+                baseTableName="order_items"
+                baseColumnNames="order_id"
+                constraintName="fk_order_items_order_id"
+                referencedTableName="orders"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for order_items to products -->
+        <addForeignKeyConstraint
+                baseTableName="order_items"
+                baseColumnNames="product_id"
+                constraintName="fk_order_items_product_id"
+                referencedTableName="products"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for order_history to orders -->
+        <addForeignKeyConstraint
+                baseTableName="order_history"
+                baseColumnNames="order_id"
+                constraintName="fk_order_history_order_id"
+                referencedTableName="orders"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+
+        <!-- Add foreign key for order_history to users -->
+        <addForeignKeyConstraint
+                baseTableName="order_history"
+                baseColumnNames="user_id"
+                constraintName="fk_order_history_user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

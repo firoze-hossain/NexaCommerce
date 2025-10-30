@@ -11,39 +11,45 @@
                 <tableExists tableName="addresses"/>
             </not>
         </preConditions>
+
         <createTable tableName="addresses">
             <column name="id" type="bigserial">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
+            <!-- Foreign key to users -->
             <column name="user_id" type="bigint">
-                <constraints nullable="false" foreignKeyName="fk_addresses_user_id" references="users(id)"/>
+                <constraints nullable="false"/>
             </column>
 
+            <!-- Bangladesh-focused address fields -->
             <column name="address_type" type="varchar(50)">
                 <constraints nullable="false"/>
             </column>
 
-            <column name="street" type="varchar(255)">
+            <column name="full_name" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="city" type="varchar(100)">
+
+            <column name="phone" type="varchar(20)">
                 <constraints nullable="false"/>
             </column>
-            <column name="state" type="varchar(100)">
+
+            <column name="area" type="varchar(100)">
                 <constraints nullable="false"/>
             </column>
-            <column name="country" type="varchar(100)">
+
+            <column name="address_line" type="varchar(500)">
                 <constraints nullable="false"/>
             </column>
-            <column name="zip_code" type="varchar(20)">
+
+            <column name="city" type="varchar(100)" defaultValue="Dhaka">
                 <constraints nullable="false"/>
             </column>
+
             <column name="landmark" type="varchar(255)"/>
+
             <column name="is_default" type="boolean" defaultValueBoolean="false"/>
-            <column name="contact_name" type="varchar(255)"/>
-            <column name="contact_phone" type="varchar(20)"/>
-            <column name="company_name" type="varchar(255)"/>
 
             <!-- BaseEntity fields -->
             <column name="created_at" type="timestamp"/>
@@ -52,6 +58,31 @@
             <column name="modified_by" type="bigint"/>
             <column name="version" type="bigint" defaultValueNumeric="0"/>
             <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
         </createTable>
+
+        <!-- Create indexes for better performance -->
+        <createIndex tableName="addresses" indexName="idx_addresses_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex tableName="addresses" indexName="idx_addresses_user_default">
+            <column name="user_id"/>
+            <column name="is_default"/>
+        </createIndex>
+
+        <createIndex tableName="addresses" indexName="idx_addresses_address_type">
+            <column name="address_type"/>
+        </createIndex>
+
+        <!-- Add foreign key constraint -->
+        <addForeignKeyConstraint
+                baseTableName="addresses"
+                baseColumnNames="user_id"
+                constraintName="fk_addresses_user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
     </changeSet>
 </databaseChangeLog>

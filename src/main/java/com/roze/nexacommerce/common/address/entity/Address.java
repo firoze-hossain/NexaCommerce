@@ -16,37 +16,33 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Address extends BaseEntity {
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AddressType addressType;
+    private AddressType addressType; // HOME, OFFICE
 
-    @Column(nullable = false)
-    private String street;
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
 
-    @Column(nullable = false)
-    private String city;
+    @Column(name = "phone", nullable = false)
+    private String phone;
 
-    @Column(nullable = false)
-    private String state;
+    @Column(name = "area", nullable = false)
+    private String area;
 
-    @Column(nullable = false)
-    private String country;
+    @Column(name = "address_line", nullable = false)
+    private String addressLine;
 
-    @Column(nullable = false)
-    private String zipCode;
+    @Column(name = "city", nullable = false)
+    private String city = "Dhaka";
 
+    @Column(name = "landmark")
     private String landmark;
 
-    @Column(nullable = false)
+    @Builder.Default
+    @Column(name = "is_default")
     private Boolean isDefault = false;
-
-    private String contactName;
-    private String contactPhone;
-    private String companyName;
-
 }

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="0018-add-orders-check-constraints" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="orders"/>
+            <tableExists tableName="order_items"/>
+        </preConditions>
+
+        <comment>Add check constraints for data integrity</comment>
+
+        <!-- Add check constraint for positive quantity in order_items -->
+        <sql>
+            ALTER TABLE order_items ADD CONSTRAINT chk_order_items_quantity_positive CHECK (quantity > 0);
+        </sql>
+
+        <!-- Add check constraint for positive price in order_items -->
+        <sql>
+            ALTER TABLE order_items ADD CONSTRAINT chk_order_items_price_positive CHECK (price >= 0);
+        </sql>
+
+        <!-- Add check constraint for positive amounts in orders -->
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_total_amount_positive CHECK (total_amount >= 0);
+        </sql>
+
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_final_amount_positive CHECK (final_amount >= 0);
+        </sql>
+
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_shipping_amount_non_negative CHECK (shipping_amount >= 0);
+        </sql>
+
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_tax_amount_non_negative CHECK (tax_amount >= 0);
+        </sql>
+
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_discount_amount_non_negative CHECK (discount_amount >= 0);
+        </sql>
+
+        <!-- Add check constraint for guest orders -->
+        <sql>
+            ALTER TABLE orders ADD CONSTRAINT chk_orders_guest_info
+                CHECK (
+                    (customer_id IS NOT NULL) OR
+                    (guest_email IS NOT NULL AND guest_name IS NOT NULL AND guest_phone IS NOT NULL)
+                    );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

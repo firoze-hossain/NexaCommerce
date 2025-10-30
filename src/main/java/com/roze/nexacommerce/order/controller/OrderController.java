@@ -3,6 +3,7 @@ package com.roze.nexacommerce.order.controller;
 import com.roze.nexacommerce.common.BaseController;
 import com.roze.nexacommerce.common.BaseResponse;
 import com.roze.nexacommerce.common.PaginatedResponse;
+import com.roze.nexacommerce.order.dto.request.GuestOrderCreateRequest;
 import com.roze.nexacommerce.order.dto.request.OrderCreateRequest;
 import com.roze.nexacommerce.order.dto.response.OrderResponse;
 import com.roze.nexacommerce.order.enums.OrderStatus;
@@ -39,6 +40,23 @@ public class OrderController extends BaseController {
         return created(response, "Order created successfully");
     }
 
+    // Guest order creation
+    @PostMapping("/guest")
+    public ResponseEntity<BaseResponse<OrderResponse>> createGuestOrder(
+            @Valid @RequestBody GuestOrderCreateRequest request) {
+        OrderResponse response = orderService.createGuestOrder(request);
+        return created(response, "Order created successfully");
+    }
+
+    // Get guest order by number and email
+    @GetMapping("/guest/{orderNumber}")
+    public ResponseEntity<BaseResponse<OrderResponse>> getGuestOrder(
+            @PathVariable String orderNumber,
+            @RequestParam String email) {
+        OrderResponse response = orderService.getGuestOrder(orderNumber, email);
+        return ok(response, "Order retrieved successfully");
+    }
+
     @GetMapping("/{orderId}")
     @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isOrderOwner(#orderId) or @securityService.isVendorOrder(#orderId)")
     public ResponseEntity<BaseResponse<OrderResponse>> getOrderById(@PathVariable Long orderId) {
@@ -73,19 +91,6 @@ public class OrderController extends BaseController {
         return paginated(orders, "Orders retrieved successfully");
     }
 
-    @GetMapping("/recent")
-    @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isCurrentCustomer()")
-    public ResponseEntity<BaseResponse<List<OrderResponse>>> getRecentOrders(
-            @RequestParam(defaultValue = "5") int limit) {
-        Long customerId = getCurrentCustomerId();
-        if (customerId == null) {
-            return unauthorized("Customer not found");
-        }
-
-        var response = orderService.getRecentOrders(customerId, limit);
-        return ok(response, "Recent orders retrieved successfully");
-    }
-
     @PatchMapping("/{orderId}/status")
     @PreAuthorize("hasAuthority('UPDATE_ORDER') or @securityService.isVendorOrder(#orderId)")
     public ResponseEntity<BaseResponse<OrderResponse>> updateOrderStatus(
@@ -93,15 +98,6 @@ public class OrderController extends BaseController {
             @RequestParam OrderStatus status) {
         OrderResponse response = orderService.updateOrderStatus(orderId, status);
         return ok(response, "Order status updated successfully");
-    }
-
-    @PatchMapping("/{orderId}/payment-status")
-    @PreAuthorize("hasAuthority('PROCESS_PAYMENT')")
-    public ResponseEntity<BaseResponse<OrderResponse>> updatePaymentStatus(
-            @PathVariable Long orderId,
-            @RequestParam PaymentStatus paymentStatus) {
-        OrderResponse response = orderService.updatePaymentStatus(orderId, paymentStatus);
-        return ok(response, "Payment status updated successfully");
     }
 
     @PostMapping("/{orderId}/cancel")
@@ -115,16 +111,6 @@ public class OrderController extends BaseController {
         OrderResponse response = orderService.cancelOrder(orderId, customerId);
         return ok(response, "Order cancelled successfully");
     }
-
-    @PostMapping("/{orderId}/notes")
-    @PreAuthorize("hasAuthority('UPDATE_ORDER') or @securityService.isVendorOrder(#orderId)")
-    public ResponseEntity<BaseResponse<OrderResponse>> addOrderNote(
-            @PathVariable Long orderId,
-            @RequestParam String note) {
-        OrderResponse response = orderService.addOrderNote(orderId, note);
-        return ok(response, "Order note added successfully");
-    }
-
 
     private Long getCurrentCustomerId() {
         return securityService.getCurrentCustomerId();
