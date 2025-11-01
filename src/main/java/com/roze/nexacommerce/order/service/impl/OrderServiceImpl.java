@@ -25,6 +25,7 @@ import com.roze.nexacommerce.order.repository.OrderRepository;
 import com.roze.nexacommerce.order.service.OrderService;
 import com.roze.nexacommerce.product.entity.Product;
 import com.roze.nexacommerce.product.repository.ProductRepository;
+import com.roze.nexacommerce.security.SecurityService;
 import com.roze.nexacommerce.vendor.entity.VendorProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final OrderMapper orderMapper;
     private final AddressService addressService;
+    private final SecurityService securityService;
     @Value("${app.shipping.inside-dhaka:60}")
     private BigDecimal insideDhakaShipping;
 
@@ -63,16 +65,25 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse createOrder(Long customerId, OrderCreateRequest request) {
         log.info("Creating order for customer ID: {}", customerId);
-
+// Validate customer ownership first
+        if (!securityService.isCurrentCustomer(customerId)) {
+            throw new AccessDeniedException("Customer does not belong to current user");
+        }
         // Validate address ownership
         validateAddressOwnership(customerId, request.getShippingAddressId());
 
         CustomerProfile customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
-
+// Get current user ID from security context
+        Long currentUserId = securityService.getCurrentUserId();
+        if (currentUserId == null) {
+            throw new AccessDeniedException("User not authenticated");
+        }
         // Get address and create order address
         Address address = addressService.getAddressEntityById(request.getShippingAddressId());
-
+        if (!address.getUser().getId().equals(currentUserId)) {
+            throw new AccessDeniedException("Address does not belong to the current user");
+        }
         OrderAddress orderAddress = OrderAddress.builder()
                 .fullName(address.getFullName())
                 .phone(address.getPhone())

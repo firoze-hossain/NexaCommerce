@@ -5,7 +5,9 @@ import com.roze.nexacommerce.common.BaseResponse;
 import com.roze.nexacommerce.common.address.dto.request.AddressRequest;
 import com.roze.nexacommerce.common.address.dto.response.AddressResponse;
 import com.roze.nexacommerce.common.address.dto.response.LocationDataResponse;
+import com.roze.nexacommerce.common.address.enums.AddressType;
 import com.roze.nexacommerce.common.address.service.AddressService;
+import com.roze.nexacommerce.security.SecurityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,44 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AddressController extends BaseController {
     private final AddressService addressService;
+    private final SecurityService securityService;
+    // ADD THESE NEW ENDPOINTS FOR CURRENT USER
+    @PostMapping("/users/current")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BaseResponse<AddressResponse>> createAddressForCurrentUser(
+            @Valid @RequestBody AddressRequest request) {
+        Long currentUserId = getCurrentUserId();
+        AddressResponse response = addressService.createAddress(currentUserId, request);
+        return created(response, "Address created successfully");
+    }
+
+    @GetMapping("/users/current")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BaseResponse<List<AddressResponse>>> getCurrentUserAddresses() {
+        Long currentUserId = getCurrentUserId();
+        List<AddressResponse> addresses = addressService.getUserAddresses(currentUserId);
+        return ok(addresses, "Addresses retrieved successfully");
+    }
+
+    @GetMapping("/users/current/default")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BaseResponse<AddressResponse>> getCurrentUserDefaultAddress() {
+        Long currentUserId = getCurrentUserId();
+        AddressResponse address = addressService.getDefaultAddress(currentUserId);
+        if (address == null) {
+            return notFound("No default address found");
+        }
+        return ok(address, "Default address retrieved successfully");
+    }
+
+    @GetMapping("/users/current/type/{addressType}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BaseResponse<List<AddressResponse>>> getCurrentUserAddressesByType(
+            @PathVariable AddressType addressType) {
+        Long currentUserId = getCurrentUserId();
+        List<AddressResponse> addresses = addressService.getUserAddressesByType(currentUserId, addressType);
+        return ok(addresses, "Addresses retrieved successfully");
+    }
 
     @PostMapping("/users/{userId}")
     @PreAuthorize("hasAuthority('CREATE_ADDRESS') or @securityService.isCurrentUser(#userId)")
@@ -100,5 +140,9 @@ public class AddressController extends BaseController {
     public ResponseEntity<BaseResponse<LocationDataResponse>> getLocationData() {
         LocationDataResponse locationData = addressService.getLocationData();
         return ok(locationData, "Location data retrieved successfully");
+    }
+
+    private Long getCurrentUserId() {
+        return securityService.getCurrentUserId();
     }
 }

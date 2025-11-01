@@ -12,6 +12,7 @@ import com.roze.nexacommerce.exception.ResourceNotFoundException;
 import com.roze.nexacommerce.user.entity.User;
 import com.roze.nexacommerce.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AddressServiceImpl implements AddressService {
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
@@ -44,7 +46,9 @@ public class AddressServiceImpl implements AddressService {
         address.setUser(user);
 
         Address savedAddress = addressRepository.save(address);
-        return addressMapper.toResponse(savedAddress);
+        AddressResponse response = addressMapper.toResponse(savedAddress);
+        log.info("Address created successfully");
+        return response;
     }
 
     @Override

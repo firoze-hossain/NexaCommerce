@@ -106,6 +106,19 @@ public class SecurityService {
                 .orElse(false);
     }
 
+    public Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        String currentUsername = authentication.getName();
+        User user = userRepository.findByEmail(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return user.getId();
+    }
+
     // ===== CUSTOMER METHODS =====
     public boolean isCurrentCustomer() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -144,7 +157,7 @@ public class SecurityService {
         return customer.map(CustomerProfile::getId).orElse(null);
     }
 
-//    public boolean isReviewOwner(Long reviewId, Long customerId) {
+    //    public boolean isReviewOwner(Long reviewId, Long customerId) {
 //        try {
 //            Review review = reviewRepository.findById(reviewId)
 //                    .orElseThrow(() -> new ResourceNotFoundException("Review", "id", reviewId));
@@ -153,18 +166,43 @@ public class SecurityService {
 //            return false;
 //        }
 //    }
-public boolean isReviewOwner(Long reviewId) {
-    Long customerId = getCurrentCustomerId();
-    if (customerId == null) {
-        return false;
+    public boolean isReviewOwner(Long reviewId) {
+        Long customerId = getCurrentCustomerId();
+        if (customerId == null) {
+            return false;
+        }
+
+        try {
+            Review review = reviewRepository.findById(reviewId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Review", "id", reviewId));
+            return review.getCustomer().getId().equals(customerId);
+        } catch (ResourceNotFoundException e) {
+            return false;
+        }
     }
 
-    try {
-        Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new ResourceNotFoundException("Review", "id", reviewId));
-        return review.getCustomer().getId().equals(customerId);
-    } catch (ResourceNotFoundException e) {
-        return false;
+    public boolean isAddressOwnerForCustomer(Long addressId, Long customerId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        // Get customer and check if it belongs to current user
+        Optional<CustomerProfile> customer = customerRepository.findById(customerId);
+        if (customer.isEmpty()) {
+            return false;
+        }
+
+        // Check if current user owns this customer profile
+        if (!customer.get().getUser().getEmail().equals(currentUsername)) {
+            return false;
+        }
+
+        // Now check address ownership
+        return addressRepository.findById(addressId)
+                .map(address -> address.getUser().getId().equals(customer.get().getUser().getId()))
+                .orElse(false);
     }
-}
 }

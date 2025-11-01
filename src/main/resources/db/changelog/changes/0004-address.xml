@@ -111,4 +111,15 @@
             <column name="is_inside_dhaka" type="boolean"/>
         </addColumn>
     </changeSet>
+    <changeSet id="0004c-make-address-type-nullable" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="addresses"/>
+            <columnExists tableName="addresses" columnName="address_type"/>
+        </preConditions>
+
+        <dropNotNullConstraint
+                tableName="addresses"
+                columnName="address_type"
+                columnDataType="varchar(50)"/>
+    </changeSet>
 </databaseChangeLog>

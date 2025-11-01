@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AddressRequest {
 
-    @NotBlank(message = "Address type is required")
+   // @NotNull(message = "Address type is required")  // ✅ CORRECT - use @NotNull for enums
     private AddressType addressType;
 
     @NotBlank(message = "Full name is required")
@@ -40,7 +40,7 @@ public class AddressRequest {
     @NotNull(message = "Is default flag is required")
     private Boolean isDefault = false;
 
-    @NotNull(message = "Address zone is required")
+    @NotNull(message = "Address zone is required")  // ✅ Also fix this if AddressZone is enum
     private AddressZone addressZone;
 
     private Boolean isInsideDhaka;

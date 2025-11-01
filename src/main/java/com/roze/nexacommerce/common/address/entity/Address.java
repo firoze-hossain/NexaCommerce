@@ -22,7 +22,7 @@ public class Address extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+   // @Column(nullable = false)
     private AddressType addressType; // HOME, OFFICE
 
     @Column(name = "full_name", nullable = false)
