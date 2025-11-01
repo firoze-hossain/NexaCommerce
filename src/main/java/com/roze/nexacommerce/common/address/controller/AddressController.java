@@ -4,6 +4,7 @@ import com.roze.nexacommerce.common.BaseController;
 import com.roze.nexacommerce.common.BaseResponse;
 import com.roze.nexacommerce.common.address.dto.request.AddressRequest;
 import com.roze.nexacommerce.common.address.dto.response.AddressResponse;
+import com.roze.nexacommerce.common.address.dto.response.LocationDataResponse;
 import com.roze.nexacommerce.common.address.service.AddressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -93,5 +94,11 @@ public class AddressController extends BaseController {
                 "Barisal", "Rangpur", "Mymensingh", "Comilla", "Narayanganj"
         );
         return ok(cities, "Bangladesh cities retrieved successfully");
+    }
+
+    @GetMapping("/bangladesh/location-data")
+    public ResponseEntity<BaseResponse<LocationDataResponse>> getLocationData() {
+        LocationDataResponse locationData = addressService.getLocationData();
+        return ok(locationData, "Location data retrieved successfully");
     }
 }

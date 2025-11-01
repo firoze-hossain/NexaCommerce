@@ -54,3 +54,9 @@ application:
       public-api: 100
       user-api: 500
       admin-api: 1000
+
+app:
+  shipping:
+    inside-dhaka: 60
+    outside-dhaka: 120
+    free-shipping-threshold: 1000

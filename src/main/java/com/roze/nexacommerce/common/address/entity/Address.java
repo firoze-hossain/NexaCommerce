@@ -2,6 +2,7 @@ package com.roze.nexacommerce.common.address.entity;
 
 import com.roze.nexacommerce.common.BaseEntity;
 import com.roze.nexacommerce.common.address.enums.AddressType;
+import com.roze.nexacommerce.common.address.enums.AddressZone;
 import com.roze.nexacommerce.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -45,4 +46,11 @@ public class Address extends BaseEntity {
     @Builder.Default
     @Column(name = "is_default")
     private Boolean isDefault = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "address_zone")
+    private AddressZone addressZone;
+
+    @Column(name = "is_inside_dhaka")
+    private Boolean isInsideDhaka;
 }

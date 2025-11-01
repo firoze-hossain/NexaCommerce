@@ -2,15 +2,20 @@ package com.roze.nexacommerce.order.service.impl;
 
 import com.roze.nexacommerce.common.PaginatedResponse;
 import com.roze.nexacommerce.common.address.entity.Address;
+import com.roze.nexacommerce.common.address.enums.AddressZone;
 import com.roze.nexacommerce.common.address.service.AddressService;
 import com.roze.nexacommerce.customer.entity.CustomerProfile;
 import com.roze.nexacommerce.customer.repository.CustomerProfileRepository;
 import com.roze.nexacommerce.exception.ResourceNotFoundException;
+import com.roze.nexacommerce.order.dto.request.GuestAddressRequest;
 import com.roze.nexacommerce.order.dto.request.GuestOrderCreateRequest;
 import com.roze.nexacommerce.order.dto.request.OrderCreateRequest;
 import com.roze.nexacommerce.order.dto.request.OrderItemRequest;
 import com.roze.nexacommerce.order.dto.response.OrderResponse;
-import com.roze.nexacommerce.order.entity.*;
+import com.roze.nexacommerce.order.entity.Order;
+import com.roze.nexacommerce.order.entity.OrderAddress;
+import com.roze.nexacommerce.order.entity.OrderHistory;
+import com.roze.nexacommerce.order.entity.OrderItem;
 import com.roze.nexacommerce.order.enums.OrderAction;
 import com.roze.nexacommerce.order.enums.OrderSource;
 import com.roze.nexacommerce.order.enums.OrderStatus;
@@ -23,6 +28,7 @@ import com.roze.nexacommerce.product.repository.ProductRepository;
 import com.roze.nexacommerce.vendor.entity.VendorProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -31,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,6 +50,14 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final OrderMapper orderMapper;
     private final AddressService addressService;
+    @Value("${app.shipping.inside-dhaka:60}")
+    private BigDecimal insideDhakaShipping;
+
+    @Value("${app.shipping.outside-dhaka:120}")
+    private BigDecimal outsideDhakaShipping;
+
+    @Value("${app.shipping.free-shipping-threshold:1000}")
+    private BigDecimal freeShippingThreshold;
 
     @Override
     @Transactional
@@ -57,6 +72,7 @@ public class OrderServiceImpl implements OrderService {
 
         // Get address and create order address
         Address address = addressService.getAddressEntityById(request.getShippingAddressId());
+
         OrderAddress orderAddress = OrderAddress.builder()
                 .fullName(address.getFullName())
                 .phone(address.getPhone())
@@ -68,7 +84,7 @@ public class OrderServiceImpl implements OrderService {
 
         // Process order items
         List<OrderItem> orderItems = processOrderItems(request.getItems());
-
+        BigDecimal shippingAmount = calculateShippingAmount(address, calculateTotalAmount(orderItems));
         // Get vendor from first product
         VendorProfile vendor = orderItems.get(0).getProduct().getVendor();
 
@@ -89,6 +105,7 @@ public class OrderServiceImpl implements OrderService {
                 .shippingAddress(orderAddress)
                 .billingAddress(orderAddress) // Same as shipping for simplicity
                 .customerNotes(request.getCustomerNotes())
+                .shippingAmount(shippingAmount)
                 .build();
 
         order.calculateTotals();
@@ -130,7 +147,10 @@ public class OrderServiceImpl implements OrderService {
                         request.getShippingAddress().getCity() : "Dhaka")
                 .landmark(request.getShippingAddress().getLandmark())
                 .build();
-
+        BigDecimal shippingAmount = calculateGuestShippingAmount(
+                request.getShippingAddress(),
+                calculateTotalAmount(orderItems)
+        );
         // Create guest order
         Order order = Order.builder()
                 .orderNumber(generateOrderNumber())
@@ -169,6 +189,55 @@ public class OrderServiceImpl implements OrderService {
                 savedOrder.getId(), savedOrder.getOrderNumber());
 
         return orderMapper.toResponse(savedOrder);
+    }
+
+    private BigDecimal calculateShippingAmount(Address address, BigDecimal subtotal) {
+        // Free shipping for orders above threshold
+        if (subtotal.compareTo(freeShippingThreshold) >= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        // Calculate based on address zone
+        if (address.getIsInsideDhaka() != null && address.getIsInsideDhaka()) {
+            return insideDhakaShipping;
+        } else if (address.getAddressZone() == AddressZone.OUTSIDE_DHAKA) {
+            return outsideDhakaShipping;
+        } else {
+            // Default shipping for other zones
+            return outsideDhakaShipping;
+        }
+    }
+
+    private BigDecimal calculateGuestShippingAmount(GuestAddressRequest address, BigDecimal subtotal) {
+        // Free shipping for orders above threshold
+        if (subtotal.compareTo(freeShippingThreshold) >= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        // Determine zone based on city/area for guest orders
+        boolean isInsideDhaka = isInsideDhaka(address.getCity(), address.getArea());
+
+        if (isInsideDhaka) {
+            return insideDhakaShipping;
+        } else {
+            return outsideDhakaShipping;
+        }
+    }
+
+    private boolean isInsideDhaka(String city, String area) {
+        if (city != null && !city.equalsIgnoreCase("Dhaka")) {
+            return false;
+        }
+
+        // List of areas considered inside Dhaka
+        List<String> insideDhakaAreas = Arrays.asList(
+                "Gulshan", "Banani", "Baridhara", "Bashundhara", "Uttara",
+                "Dhanmondi", "Mirpur", "Mohammadpur", "Motijheel", "Malibagh",
+                "Rampura", "Badda", "Mohakhali", "Farmgate", "Shyamoli"
+        );
+
+        return area != null && insideDhakaAreas.stream()
+                .anyMatch(dhakaArea -> dhakaArea.equalsIgnoreCase(area));
     }
 
     @Override

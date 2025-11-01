@@ -2,6 +2,7 @@ package com.roze.nexacommerce.common.address.service.impl;
 
 import com.roze.nexacommerce.common.address.dto.request.AddressRequest;
 import com.roze.nexacommerce.common.address.dto.response.AddressResponse;
+import com.roze.nexacommerce.common.address.dto.response.LocationDataResponse;
 import com.roze.nexacommerce.common.address.entity.Address;
 import com.roze.nexacommerce.common.address.enums.AddressType;
 import com.roze.nexacommerce.common.address.mapper.AddressMapper;
@@ -14,7 +15,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -79,6 +84,7 @@ public class AddressServiceImpl implements AddressService {
                 .map(addressMapper::toResponse)
                 .orElse(null);
     }
+
     @Override
     public AddressResponse getDefaultAddress(Long userId) {
         // Get any default address regardless of type
@@ -86,6 +92,7 @@ public class AddressServiceImpl implements AddressService {
                 .map(addressMapper::toResponse)
                 .orElse(null);
     }
+
     @Override
     @Transactional
     public AddressResponse updateAddress(Long addressId, AddressRequest request) {
@@ -131,5 +138,47 @@ public class AddressServiceImpl implements AddressService {
     public Address getAddressEntityById(Long addressId) {
         return addressRepository.findById(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
+    }
+
+    public LocationDataResponse getLocationData() {
+        List<String> dhakaMetroAreas = Arrays.asList(
+                "Gulshan", "Banani", "Baridhara", "Bashundhara", "Uttara",
+                "Dhanmondi", "Mirpur", "Mohammadpur", "Motijheel", "Malibagh",
+                "Rampura", "Badda", "Mohakhali", "Farmgate", "Shyamoli"
+        );
+
+        List<String> dhakaSuburbanAreas = Arrays.asList(
+                "Savar", "Keraniganj", "Narayanganj", "Gazipur", "Tongi"
+        );
+
+        List<String> otherCities = Arrays.asList(
+                "Chittagong", "Sylhet", "Rajshahi", "Khulna", "Barisal",
+                "Rangpur", "Mymensingh", "Comilla"
+        );
+
+        Map<String, List<String>> cityAreas = new HashMap<>();
+        cityAreas.put("Dhaka", dhakaMetroAreas);
+        cityAreas.put("Dhaka Suburbs", dhakaSuburbanAreas);
+
+        List<LocationDataResponse.ShippingRate> shippingRates = Arrays.asList(
+                LocationDataResponse.ShippingRate.builder()
+                        .zone("Inside Dhaka")
+                        .rate(new BigDecimal("60"))
+                        .deliveryTime("1-2 days")
+                        .build(),
+                LocationDataResponse.ShippingRate.builder()
+                        .zone("Outside Dhaka")
+                        .rate(new BigDecimal("120"))
+                        .deliveryTime("3-5 days")
+                        .build()
+        );
+
+        return LocationDataResponse.builder()
+                .dhakaMetroAreas(dhakaMetroAreas)
+                .dhakaSuburbanAreas(dhakaSuburbanAreas)
+                .otherCities(otherCities)
+                .cityAreas(cityAreas)
+                .shippingRates(shippingRates)
+                .build();
     }
 }

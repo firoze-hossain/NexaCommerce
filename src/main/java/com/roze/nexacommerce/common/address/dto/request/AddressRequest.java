@@ -1,6 +1,7 @@
 package com.roze.nexacommerce.common.address.dto.request;
 
 import com.roze.nexacommerce.common.address.enums.AddressType;
+import com.roze.nexacommerce.common.address.enums.AddressZone;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -38,4 +39,9 @@ public class AddressRequest {
     @Builder.Default
     @NotNull(message = "Is default flag is required")
     private Boolean isDefault = false;
+
+    @NotNull(message = "Address zone is required")
+    private AddressZone addressZone;
+
+    private Boolean isInsideDhaka;
 }

@@ -1,5 +1,6 @@
 package com.roze.nexacommerce.common.address.dto.response;
 
+import com.roze.nexacommerce.common.address.enums.AddressZone;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +24,8 @@ public class AddressResponse {
     private Boolean isDefault;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
+    private AddressZone addressZone;
+    private Boolean isInsideDhaka;
     public String getFullAddress() {
         StringBuilder address = new StringBuilder();
         address.append(addressLine);

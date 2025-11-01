@@ -2,6 +2,7 @@ package com.roze.nexacommerce.common.address.service;
 
 import com.roze.nexacommerce.common.address.dto.request.AddressRequest;
 import com.roze.nexacommerce.common.address.dto.response.AddressResponse;
+import com.roze.nexacommerce.common.address.dto.response.LocationDataResponse;
 import com.roze.nexacommerce.common.address.entity.Address;
 import com.roze.nexacommerce.common.address.enums.AddressType;
 
@@ -15,8 +16,10 @@ public interface AddressService {
     List<AddressResponse> getUserAddressesByType(Long userId, AddressType addressType);
 
     AddressResponse getAddressById(Long addressId);
+
     // Overloaded methods for default address
     AddressResponse getDefaultAddress(Long userId);
+
     AddressResponse getDefaultAddress(Long userId, AddressType addressType);
 
     AddressResponse updateAddress(Long addressId, AddressRequest request);
@@ -26,4 +29,6 @@ public interface AddressService {
     void deleteAddress(Long addressId);
 
     Address getAddressEntityById(Long addressId);
+
+    LocationDataResponse getLocationData();
 }

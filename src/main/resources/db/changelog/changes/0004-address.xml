@@ -85,4 +85,30 @@
                 onDelete="CASCADE"
                 onUpdate="CASCADE"/>
     </changeSet>
+
+    <changeSet id="0004a-add-address-zone-fields" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="addresses"/>
+            <not>
+                <columnExists tableName="addresses" columnName="address_zone"/>
+            </not>
+        </preConditions>
+
+        <addColumn tableName="addresses">
+            <column name="address_zone" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="0004b-add-is-inside-dhaka-field" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="addresses"/>
+            <not>
+                <columnExists tableName="addresses" columnName="is_inside_dhaka"/>
+            </not>
+        </preConditions>
+
+        <addColumn tableName="addresses">
+            <column name="is_inside_dhaka" type="boolean"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
