@@ -217,6 +217,7 @@ public class SecurityService {
             return false;
         }
     }
+
     // NEW: Method specifically for admin order access
     public boolean canAccessOrders() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -327,5 +328,33 @@ public class SecurityService {
         return addressRepository.findById(addressId)
                 .map(address -> address.getUser().getId().equals(customer.get().getUser().getId()))
                 .orElse(false);
+    }
+
+    public boolean isOrderOwner(Long orderId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+            // For customer orders, check if the current user owns the customer profile
+            if (order.getCustomer() != null) {
+                return order.getCustomer().getUser().getEmail().equals(currentUsername);
+            }
+
+            // For guest orders, allow admin/vendor access
+            return authentication.getAuthorities().stream()
+                    .anyMatch(auth ->
+                            auth.getAuthority().equals("ADMIN") ||
+                                    auth.getAuthority().equals("SUPERADMIN") ||
+                                    auth.getAuthority().equals("VENDOR"));
+        } catch (ResourceNotFoundException e) {
+            return false;
+        }
     }
 }
