@@ -8,6 +8,8 @@ import com.roze.nexacommerce.common.address.enums.AddressType;
 import com.roze.nexacommerce.common.address.mapper.AddressMapper;
 import com.roze.nexacommerce.common.address.repository.AddressRepository;
 import com.roze.nexacommerce.common.address.service.AddressService;
+import com.roze.nexacommerce.customer.entity.CustomerProfile;
+import com.roze.nexacommerce.customer.repository.CustomerProfileRepository;
 import com.roze.nexacommerce.exception.ResourceNotFoundException;
 import com.roze.nexacommerce.user.entity.User;
 import com.roze.nexacommerce.user.repository.UserRepository;
@@ -30,6 +32,7 @@ public class AddressServiceImpl implements AddressService {
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
     private final AddressMapper addressMapper;
+    private final CustomerProfileRepository customerProfileRepository;
 
     @Override
     @Transactional
@@ -49,6 +52,46 @@ public class AddressServiceImpl implements AddressService {
         AddressResponse response = addressMapper.toResponse(savedAddress);
         log.info("Address created successfully");
         return response;
+    }
+
+    public AddressResponse createAddressForCustomer(Long customerId, AddressRequest request) {
+        // Get customer profile to find the associated user
+        CustomerProfile customer = customerProfileRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
+
+        // Use the customer's user, not the logged-in admin's user
+        User customerUser = customer.getUser();
+
+        return createAddressForUser(customerUser.getId(), request);
+    }
+    @Override
+    public List<AddressResponse> getCustomerAddresses(Long customerId) {
+        // Get customer profile to find the associated user
+        CustomerProfile customer = customerProfileRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer", "id", customerId));
+
+        // Use the customer's user to get addresses
+        User customerUser = customer.getUser();
+
+        return addressRepository.findByUserId(customerUser.getId())
+                .stream()
+                .map(addressMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+    public AddressResponse createAddressForUser(Long userId, AddressRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        // Check if this should be default and update existing defaults if needed
+        if (request.getIsDefault()) {
+            addressRepository.clearDefaultAddresses(userId);
+        }
+
+        Address address = addressMapper.toEntity(request);
+        address.setUser(user);
+
+        Address savedAddress = addressRepository.save(address);
+        return addressMapper.toResponse(savedAddress);
     }
 
     @Override

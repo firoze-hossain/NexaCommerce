@@ -31,4 +31,10 @@ public interface AddressService {
     Address getAddressEntityById(Long addressId);
 
     LocationDataResponse getLocationData();
+
+    AddressResponse createAddressForUser(Long userId, AddressRequest request);
+
+    AddressResponse createAddressForCustomer(Long customerId, AddressRequest request);
+
+    List<AddressResponse> getCustomerAddresses(Long customerId);
 }

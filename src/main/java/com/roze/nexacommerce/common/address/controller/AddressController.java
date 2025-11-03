@@ -22,6 +22,7 @@ import java.util.List;
 public class AddressController extends BaseController {
     private final AddressService addressService;
     private final SecurityService securityService;
+
     // ADD THESE NEW ENDPOINTS FOR CURRENT USER
     @PostMapping("/users/current")
     @PreAuthorize("isAuthenticated()")
@@ -58,6 +59,22 @@ public class AddressController extends BaseController {
         Long currentUserId = getCurrentUserId();
         List<AddressResponse> addresses = addressService.getUserAddressesByType(currentUserId, addressType);
         return ok(addresses, "Addresses retrieved successfully");
+    }
+
+    @PostMapping("/admin/customers/{customerId}")
+    @PreAuthorize("hasAuthority('CREATE_ADDRESS')")
+    public ResponseEntity<BaseResponse<AddressResponse>> createAddressForCustomer(
+            @PathVariable Long customerId,
+            @Valid @RequestBody AddressRequest request) {
+        AddressResponse response = addressService.createAddressForCustomer(customerId, request);
+        return created(response, "Address created successfully for customer");
+    }
+    @GetMapping("/admin/customers/{customerId}")
+    @PreAuthorize("hasAuthority('READ_ADDRESS')")
+    public ResponseEntity<BaseResponse<List<AddressResponse>>> getCustomerAddresses(
+            @PathVariable Long customerId) {
+        List<AddressResponse> addresses = addressService.getCustomerAddresses(customerId);
+        return ok(addresses, "Customer addresses retrieved successfully");
     }
 
     @PostMapping("/users/{userId}")
