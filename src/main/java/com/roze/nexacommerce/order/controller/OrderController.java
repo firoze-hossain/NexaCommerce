@@ -7,7 +7,6 @@ import com.roze.nexacommerce.order.dto.request.GuestOrderCreateRequest;
 import com.roze.nexacommerce.order.dto.request.OrderCreateRequest;
 import com.roze.nexacommerce.order.dto.response.OrderResponse;
 import com.roze.nexacommerce.order.enums.OrderStatus;
-import com.roze.nexacommerce.order.enums.PaymentStatus;
 import com.roze.nexacommerce.order.service.OrderService;
 import com.roze.nexacommerce.security.SecurityService;
 import jakarta.validation.Valid;
@@ -18,8 +17,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/orders")
@@ -58,7 +55,7 @@ public class OrderController extends BaseController {
     }
 
     @GetMapping("/{orderId}")
-    @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isOrderOwner(#orderId) or @securityService.isVendorOrder(#orderId)")
+    @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isOrderOwner(#orderId) or @securityService.isVendorOrder(#orderId) or @securityService.isOrderOwnerOrHasAccess(#orderId) or @securityService.isVendorOrder(#orderId)")
     public ResponseEntity<BaseResponse<OrderResponse>> getOrderById(@PathVariable Long orderId) {
         OrderResponse response = orderService.getOrderById(orderId);
         return ok(response, "Order retrieved successfully");
@@ -71,23 +68,52 @@ public class OrderController extends BaseController {
         return ok(response, "Order retrieved successfully");
     }
 
+    //    @GetMapping("/my-orders")
+//    @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isCurrentCustomer() or @securityService.canAccessOrders()")
+//    public ResponseEntity<BaseResponse<PaginatedResponse<OrderResponse>>> getMyOrders(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size,
+//            @RequestParam(defaultValue = "createdAt") String sortBy,
+//            @RequestParam(defaultValue = "desc") String sortDirection) {
+//        Long customerId = getCurrentCustomerId();
+//        if (customerId == null) {
+//            return unauthorized("Customer not found");
+//        }
+//
+//        Sort sort = sortDirection.equalsIgnoreCase("desc") ?
+//                Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+//        Pageable pageable = PageRequest.of(page, size, sort);
+//
+//        PaginatedResponse<OrderResponse> orders = orderService.getCustomerOrders(customerId, pageable);
+//        return paginated(orders, "Orders retrieved successfully");
+//    }
     @GetMapping("/my-orders")
-    @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isCurrentCustomer()")
+    @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isCurrentCustomer() or @securityService.canAccessOrders()")
     public ResponseEntity<BaseResponse<PaginatedResponse<OrderResponse>>> getMyOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection) {
-        Long customerId = getCurrentCustomerId();
-        if (customerId == null) {
-            return unauthorized("Customer not found");
-        }
 
         Sort sort = sortDirection.equalsIgnoreCase("desc") ?
                 Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        PaginatedResponse<OrderResponse> orders = orderService.getCustomerOrders(customerId, pageable);
+        PaginatedResponse<OrderResponse> orders;
+
+        // Check if user is admin/superadmin/vendor (can access all orders)
+        if (securityService.canAccessOrders()) {
+            orders = orderService.getAllOrders(pageable);
+        }
+        // Check if user is a customer
+        else {
+            Long customerId = getCurrentCustomerId();
+            if (customerId == null) {
+                return unauthorized("Customer not found");
+            }
+            orders = orderService.getCustomerOrders(customerId, pageable);
+        }
+
         return paginated(orders, "Orders retrieved successfully");
     }
 
@@ -99,6 +125,7 @@ public class OrderController extends BaseController {
         OrderResponse response = orderService.updateOrderStatus(orderId, status);
         return ok(response, "Order status updated successfully");
     }
+
 
     @PostMapping("/{orderId}/cancel")
     @PreAuthorize("hasAuthority('UPDATE_ORDER') or @securityService.isOrderOwner(#orderId)")

@@ -4,6 +4,8 @@ import com.roze.nexacommerce.common.address.repository.AddressRepository;
 import com.roze.nexacommerce.customer.entity.CustomerProfile;
 import com.roze.nexacommerce.customer.repository.CustomerProfileRepository;
 import com.roze.nexacommerce.exception.ResourceNotFoundException;
+import com.roze.nexacommerce.order.entity.Order;
+import com.roze.nexacommerce.order.repository.OrderRepository;
 import com.roze.nexacommerce.review.entity.Review;
 import com.roze.nexacommerce.review.repository.ReviewRepository;
 import com.roze.nexacommerce.user.entity.User;
@@ -24,6 +26,7 @@ public class SecurityService {
     private final AddressRepository addressRepository;
     private final CustomerProfileRepository customerRepository;
     private final ReviewRepository reviewRepository;
+    private final OrderRepository orderRepository;
 
     public boolean isCurrentUser(Long userId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -166,6 +169,126 @@ public class SecurityService {
 //            return false;
 //        }
 //    }
+    public boolean isVendorOrderByNumber(String orderNumber) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        try {
+            Order order = orderRepository.findByOrderNumber(orderNumber)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order", "orderNumber", orderNumber));
+
+            if (order.getVendor() != null) {
+                return order.getVendor().getUser().getEmail().equals(currentUsername);
+            }
+        } catch (ResourceNotFoundException e) {
+            return false;
+        }
+
+        return false;
+    }
+
+    public boolean isOrderOwnerByNumber(String orderNumber) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        try {
+            Order order = orderRepository.findByOrderNumber(orderNumber)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order", "orderNumber", orderNumber));
+
+            if (order.getCustomer() != null) {
+                return order.getCustomer().getUser().getEmail().equals(currentUsername);
+            }
+
+            // For guest orders, check if current user is admin/vendor
+            return authentication.getAuthorities().stream()
+                    .anyMatch(auth ->
+                            auth.getAuthority().equals("ADMIN") ||
+                                    auth.getAuthority().equals("SUPERADMIN") ||
+                                    auth.getAuthority().equals("VENDOR"));
+        } catch (ResourceNotFoundException e) {
+            return false;
+        }
+    }
+    // NEW: Method specifically for admin order access
+    public boolean canAccessOrders() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        return authentication.getAuthorities().stream()
+                .anyMatch(auth ->
+                        auth.getAuthority().equals("MANAGE_ORDERS") ||
+                                auth.getAuthority().equals("ADMIN") ||
+                                auth.getAuthority().equals("SUPERADMIN") ||
+                                auth.getAuthority().equals("VENDOR"));
+    }
+
+    // NEW: Check if user is vendor for the order
+    public boolean isVendorOrder(Long orderId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+            if (order.getVendor() != null) {
+                return order.getVendor().getUser().getEmail().equals(currentUsername);
+            }
+        } catch (ResourceNotFoundException e) {
+            return false;
+        }
+
+        return false;
+    }
+
+    public boolean isOrderOwnerOrHasAccess(Long orderId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        String currentUsername = authentication.getName();
+
+        // Check if user has order management permissions
+        boolean hasOrderAccess = authentication.getAuthorities().stream()
+                .anyMatch(auth ->
+                        auth.getAuthority().equals("MANAGE_ORDERS") ||
+                                auth.getAuthority().equals("ADMIN") ||
+                                auth.getAuthority().equals("SUPERADMIN"));
+
+        if (hasOrderAccess) {
+            return true;
+        }
+
+        // Check if user is the order owner (customer)
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+            if (order.getCustomer() != null) {
+                return order.getCustomer().getUser().getEmail().equals(currentUsername);
+            }
+        } catch (ResourceNotFoundException e) {
+            return false;
+        }
+
+        return false;
+    }
+
     public boolean isReviewOwner(Long reviewId) {
         Long customerId = getCurrentCustomerId();
         if (customerId == null) {

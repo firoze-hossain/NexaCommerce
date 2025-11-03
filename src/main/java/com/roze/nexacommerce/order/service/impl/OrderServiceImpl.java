@@ -325,6 +325,27 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    // OrderServiceImpl.java - IMPLEMENT THIS METHOD
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResponse<OrderResponse> getAllOrders(Pageable pageable) {
+        log.debug("Fetching all orders for admin user");
+
+        Page<Order> orderPage = orderRepository.findAll(pageable);
+
+        List<OrderResponse> orderResponses = orderPage.getContent().stream()
+                .map(orderMapper::toResponse)
+                .toList();
+
+        return PaginatedResponse.<OrderResponse>builder()
+                .items(orderResponses)
+                .totalItems(orderPage.getTotalElements())
+                .currentPage(orderPage.getNumber())
+                .pageSize(orderPage.getSize())
+                .totalPages(orderPage.getTotalPages())
+                .build();
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getRecentOrders(Long customerId, int limit) {
