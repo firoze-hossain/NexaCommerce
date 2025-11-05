@@ -1,0 +1,541 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- Create Email Configurations Table -->
+    <changeSet id="1001-create-email-configurations-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="email_configurations"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="email_configurations">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Basic Configuration -->
+            <column name="config_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="purpose" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="from_email" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="from_name" type="varchar(255)"/>
+
+            <column name="provider" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- SMTP Configuration -->
+            <column name="host" type="varchar(255)"/>
+            <column name="port" type="integer"/>
+            <column name="username" type="varchar(255)"/>
+            <column name="password" type="varchar(500)"/>
+
+            <!-- Advanced Settings -->
+            <column name="use_tls" type="boolean" defaultValueBoolean="true"/>
+            <column name="use_ssl" type="boolean" defaultValueBoolean="false"/>
+            <column name="encryption_type" type="varchar(50)"/>
+
+            <!-- Provider-specific configurations -->
+            <column name="api_key" type="varchar(500)"/>
+            <column name="api_secret" type="varchar(500)"/>
+            <column name="domain" type="varchar(255)"/>
+            <column name="region" type="varchar(100)"/>
+
+            <!-- Configuration Flags -->
+            <column name="is_active" type="boolean" defaultValueBoolean="true"/>
+            <column name="is_default" type="boolean" defaultValueBoolean="false"/>
+
+            <!-- Retry and Timeout Settings -->
+            <column name="max_retries" type="integer" defaultValueNumeric="3"/>
+            <column name="timeout_ms" type="integer" defaultValueNumeric="30000"/>
+
+            <!-- Rate limiting -->
+            <column name="rate_limit_per_hour" type="integer" defaultValueNumeric="1000"/>
+
+            <!-- Templates -->
+            <column name="template_id" type="varchar(255)"/>
+            <column name="template_data" type="json"/>
+            <column name="custom_headers" type="text"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create indexes for email_configurations -->
+        <createIndex tableName="email_configurations" indexName="idx_email_configs_purpose">
+            <column name="purpose"/>
+        </createIndex>
+
+        <createIndex tableName="email_configurations" indexName="idx_email_configs_provider">
+            <column name="provider"/>
+        </createIndex>
+
+        <createIndex tableName="email_configurations" indexName="idx_email_configs_active_default">
+            <column name="is_active"/>
+            <column name="is_default"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Create Email Templates Table -->
+    <changeSet id="1002-create-email-templates-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="email_templates"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="email_templates">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Template Identification -->
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="template_key" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="category" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Template Content -->
+            <column name="subject" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="preheader" type="text"/>
+            <column name="html_content" type="longtext">
+                <constraints nullable="false"/>
+            </column>
+            <column name="text_content" type="longtext"/>
+
+            <!-- Template Metadata -->
+            <column name="language" type="varchar(10)"/>
+            <column name="is_active" type="boolean" defaultValueBoolean="true"/>
+            <column name="is_system_template" type="boolean" defaultValueBoolean="false"/>
+            <column name="template_version" type="integer" defaultValueNumeric="1"/>
+
+            <!-- Template Configuration -->
+            <column name="supported_purposes" type="jsonb"/>
+            <column name="available_variables" type="jsonb"/>
+            <column name="default_variables" type="jsonb"/>
+
+            <!-- Foreign key to default configuration -->
+            <column name="default_configuration_id" type="bigint"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create indexes for email_templates -->
+        <createIndex tableName="email_templates" indexName="idx_email_templates_key">
+            <column name="template_key"/>
+        </createIndex>
+
+        <createIndex tableName="email_templates" indexName="idx_email_templates_category">
+            <column name="category"/>
+        </createIndex>
+
+        <createIndex tableName="email_templates" indexName="idx_email_templates_active">
+            <column name="is_active"/>
+        </createIndex>
+
+        <!-- Add foreign key constraint for default_configuration_id -->
+        <addForeignKeyConstraint
+                baseTableName="email_templates"
+                baseColumnNames="default_configuration_id"
+                constraintName="fk_email_templates_default_config"
+                referencedTableName="email_configurations"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+    </changeSet>
+
+    <!-- Create Email Logs Table -->
+    <changeSet id="1003-create-email-logs-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="email_logs"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="email_logs">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign keys -->
+            <column name="configuration_id" type="bigint"/>
+            <column name="template_id" type="bigint"/>
+
+            <!-- Email Details -->
+            <column name="purpose" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="recipient_email" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="recipient_name" type="varchar(255)"/>
+            <column name="subject" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="content" type="longtext"/>
+            <column name="status" type="varchar(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Provider Information -->
+            <column name="message_id" type="varchar(255)"/>
+
+            <!-- Timestamps -->
+            <column name="sent_at" type="timestamp"/>
+            <column name="delivered_at" type="timestamp"/>
+            <column name="opened_at" type="timestamp"/>
+
+            <!-- Error and Response Handling -->
+            <column name="error_message" type="text"/>
+            <column name="provider_response" type="text"/>
+            <column name="retry_count" type="integer"/>
+
+            <!-- Template and Tracking -->
+            <column name="template_variables" type="json"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="user_agent" type="text"/>
+            <column name="tracking_token" type="varchar(255)"/>
+            <column name="is_tracked" type="boolean"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create indexes for email_logs -->
+        <createIndex tableName="email_logs" indexName="idx_email_logs_recipient_email">
+            <column name="recipient_email"/>
+        </createIndex>
+
+        <createIndex tableName="email_logs" indexName="idx_email_logs_status">
+            <column name="status"/>
+        </createIndex>
+
+        <createIndex tableName="email_logs" indexName="idx_email_logs_purpose">
+            <column name="purpose"/>
+        </createIndex>
+
+        <createIndex tableName="email_logs" indexName="idx_email_logs_sent_at">
+            <column name="sent_at"/>
+        </createIndex>
+
+        <createIndex tableName="email_logs" indexName="idx_email_logs_tracking_token">
+            <column name="tracking_token"/>
+        </createIndex>
+
+        <createIndex tableName="email_logs" indexName="idx_email_logs_message_id">
+            <column name="message_id"/>
+        </createIndex>
+
+        <!-- Add foreign key constraints -->
+        <addForeignKeyConstraint
+                baseTableName="email_logs"
+                baseColumnNames="configuration_id"
+                constraintName="fk_email_logs_configuration"
+                referencedTableName="email_configurations"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+
+        <addForeignKeyConstraint
+                baseTableName="email_logs"
+                baseColumnNames="template_id"
+                constraintName="fk_email_logs_template"
+                referencedTableName="email_templates"
+                referencedColumnNames="id"
+                onDelete="SET NULL"
+                onUpdate="CASCADE"/>
+    </changeSet>
+
+    <!-- Create Email Attachments Table -->
+    <changeSet id="1004-create-email-attachments-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="email_attachments"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="email_attachments">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign key -->
+            <column name="email_log_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Attachment Details -->
+            <column name="file_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="file_path" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="file_type" type="varchar(100)"/>
+            <column name="file_size" type="bigint"/>
+            <column name="content_id" type="varchar(255)"/>
+            <column name="is_inline" type="boolean" defaultValueBoolean="false"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create indexes for email_attachments -->
+        <createIndex tableName="email_attachments" indexName="idx_email_attachments_log_id">
+            <column name="email_log_id"/>
+        </createIndex>
+
+        <createIndex tableName="email_attachments" indexName="idx_email_attachments_inline">
+            <column name="is_inline"/>
+        </createIndex>
+
+        <!-- Add foreign key constraint -->
+        <addForeignKeyConstraint
+                baseTableName="email_attachments"
+                baseColumnNames="email_log_id"
+                constraintName="fk_email_attachments_log"
+                referencedTableName="email_logs"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+    </changeSet>
+
+    <!-- Create Email Tracking Table -->
+    <changeSet id="1005-create-email-tracking-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="email_tracking"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="email_tracking">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign key -->
+            <column name="email_log_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Tracking Information -->
+            <column name="tracking_token" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="opened_at" type="timestamp"/>
+            <column name="clicked_at" type="timestamp"/>
+
+            <!-- User Information -->
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="user_agent" type="text"/>
+            <column name="country" type="varchar(100)"/>
+            <column name="city" type="varchar(100)"/>
+
+            <!-- Click Tracking -->
+            <column name="click_url" type="text"/>
+            <column name="click_count" type="integer" defaultValueNumeric="0"/>
+
+            <!-- Device Information -->
+            <column name="device_type" type="varchar(50)"/>
+            <column name="browser" type="varchar(100)"/>
+            <column name="platform" type="varchar(100)"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create indexes for email_tracking -->
+        <createIndex tableName="email_tracking" indexName="idx_email_tracking_log_id">
+            <column name="email_log_id"/>
+        </createIndex>
+
+        <createIndex tableName="email_tracking" indexName="idx_email_tracking_token">
+            <column name="tracking_token"/>
+        </createIndex>
+
+        <createIndex tableName="email_tracking" indexName="idx_email_tracking_opened_at">
+            <column name="opened_at"/>
+        </createIndex>
+
+        <!-- Add foreign key constraint -->
+        <addForeignKeyConstraint
+                baseTableName="email_tracking"
+                baseColumnNames="email_log_id"
+                constraintName="fk_email_tracking_log"
+                referencedTableName="email_logs"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+    </changeSet>
+
+    <!-- Create Template Purpose Mappings Table -->
+    <changeSet id="1006-create-template-purpose-mappings-table" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="template_purpose_mappings"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="template_purpose_mappings">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Foreign key -->
+            <column name="template_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Purpose Mapping -->
+            <column name="purpose" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="is_default" type="boolean" defaultValueBoolean="false"/>
+            <column name="priority" type="integer" defaultValueNumeric="1"/>
+
+            <!-- BaseEntity fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+
+        <!-- Create unique constraint for template_id and purpose -->
+        <addUniqueConstraint
+                tableName="template_purpose_mappings"
+                columnNames="template_id, purpose"
+                constraintName="uk_template_purpose_mapping"/>
+
+        <!-- Create indexes for template_purpose_mappings -->
+        <createIndex tableName="template_purpose_mappings" indexName="idx_template_purpose_template_id">
+            <column name="template_id"/>
+        </createIndex>
+
+        <createIndex tableName="template_purpose_mappings" indexName="idx_template_purpose_purpose">
+            <column name="purpose"/>
+        </createIndex>
+
+        <createIndex tableName="template_purpose_mappings" indexName="idx_template_purpose_default_priority">
+            <column name="is_default"/>
+            <column name="priority"/>
+        </createIndex>
+
+        <!-- Add foreign key constraint -->
+        <addForeignKeyConstraint
+                baseTableName="template_purpose_mappings"
+                baseColumnNames="template_id"
+                constraintName="fk_template_purpose_mapping_template"
+                referencedTableName="email_templates"
+                referencedColumnNames="id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+    </changeSet>
+
+    <!-- Additional indexes for better performance -->
+    <changeSet id="1007-add-additional-email-indexes" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="email_logs"/>
+        </preConditions>
+
+        <!-- Composite index for common query patterns -->
+        <createIndex tableName="email_logs" indexName="idx_email_logs_status_created_at">
+            <column name="status"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <createIndex tableName="email_logs" indexName="idx_email_logs_recipient_status">
+            <column name="recipient_email"/>
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+    <!-- ChangeSet to alter JSON columns to JSONB -->
+    <changeSet id="1020-alter-email-templates-json-to-jsonb" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="email_templates"/>
+        </preConditions>
+
+        <!-- Alter supported_purposes column -->
+        <sql>ALTER TABLE email_templates ALTER COLUMN supported_purposes TYPE jsonb USING supported_purposes::jsonb;</sql>
+
+        <!-- Alter available_variables column -->
+        <sql>ALTER TABLE email_templates ALTER COLUMN available_variables TYPE jsonb USING available_variables::jsonb;</sql>
+
+        <!-- Alter default_variables column -->
+        <sql>ALTER TABLE email_templates ALTER COLUMN default_variables TYPE jsonb USING default_variables::jsonb;</sql>
+    </changeSet>
+
+    <changeSet id="1021-fix-email-configurations-json-column" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="email_configurations"/>
+            <columnExists tableName="email_configurations" columnName="template_data"/>
+        </preConditions>
+
+        <!-- Change template_data from json to jsonb and handle conversion -->
+        <modifyDataType
+                tableName="email_configurations"
+                columnName="template_data"
+                newDataType="jsonb"/>
+    </changeSet>
+</databaseChangeLog>
