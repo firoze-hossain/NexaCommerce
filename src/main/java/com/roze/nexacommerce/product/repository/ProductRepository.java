@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -62,4 +63,61 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     @Query("SELECT p FROM Product p WHERE p.brand = :brand AND p.published = true AND p.status = 'ACTIVE'")
     Page<Product> findActiveProductsByBrand(Brand brand, Pageable pageable);
+
+
+//    @Query("SELECT p FROM Product p WHERE " +
+//            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
+//            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')) " +
+//            "OR LOWER(p.shortDescription) LIKE LOWER(CONCAT('%', :query, '%')) " +
+//            "OR LOWER(p.sku) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+//            "AND p.published = true AND p.status = 'ACTIVE' " +
+//            "AND (:categories IS NULL OR p.category.id IN :categories) " +
+//            "AND (:brands IS NULL OR p.brand.id IN :brands) " +
+//            "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+//            "AND (:maxPrice IS NULL OR p.price <= :maxPrice) " +
+//            "AND (:inStock IS NULL OR (:inStock = true AND p.stock > 0) OR (:inStock = false AND p.stock <= 0)) " +
+//            "AND (:featured IS NULL OR p.featured = :featured)")
+//    Page<Product> searchWithFilters(
+//            @Param("query") String query,
+//            @Param("categories") List<Long> categories,
+//            @Param("brands") List<Long> brands,
+//            @Param("minPrice") BigDecimal minPrice,
+//            @Param("maxPrice") BigDecimal maxPrice,
+//            @Param("inStock") Boolean inStock,
+//            @Param("featured") Boolean featured,
+//            Pageable pageable);
+@Query("SELECT p FROM Product p WHERE " +
+        "(LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
+        "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')) " +
+        "OR LOWER(p.shortDescription) LIKE LOWER(CONCAT('%', :query, '%')) " +
+        "OR LOWER(p.sku) LIKE LOWER(CONCAT('%', :query, '%')) " +
+        "OR LOWER(p.category.name) LIKE LOWER(CONCAT('%', :query, '%'))) " + // ADD THIS LINE
+        "AND p.published = true AND p.status = 'ACTIVE' " +
+        "AND (:categories IS NULL OR p.category.id IN :categories) " +
+        "AND (:brands IS NULL OR p.brand.id IN :brands) " +
+        "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+        "AND (:maxPrice IS NULL OR p.price <= :maxPrice) " +
+        "AND (:inStock IS NULL OR (:inStock = true AND p.stock > 0) OR (:inStock = false AND p.stock <= 0)) " +
+        "AND (:featured IS NULL OR p.featured = :featured)")
+Page<Product> searchWithFilters(
+        @Param("query") String query,
+        @Param("categories") List<Long> categories,
+        @Param("brands") List<Long> brands,
+        @Param("minPrice") BigDecimal minPrice,
+        @Param("maxPrice") BigDecimal maxPrice,
+        @Param("inStock") Boolean inStock,
+        @Param("featured") Boolean featured,
+        Pageable pageable);
+    @Query("SELECT p FROM Product p WHERE " +
+            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
+            "OR LOWER(p.sku) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+            "AND p.published = true AND p.status = 'ACTIVE' " +
+            "ORDER BY p.name ASC")
+    List<Product> searchProductsAutocomplete(@Param("query") String query, @Param("limit") int limit);
+
+    @Query("SELECT DISTINCT p.name FROM Product p WHERE " +
+            "LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) " +
+            "AND p.published = true AND p.status = 'ACTIVE' " +
+            "ORDER BY p.name ASC")
+    List<String> findProductNameSuggestions(@Param("query") String query, @Param("limit") int limit);
 }
