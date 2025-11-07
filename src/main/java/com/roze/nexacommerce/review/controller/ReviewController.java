@@ -39,7 +39,7 @@ public class ReviewController extends BaseController {
     }
 
     @PutMapping("/{reviewId}")
-    @PreAuthorize("hasRole('CUSTOMER') and @securityService.isReviewOwner(#reviewId)")
+    @PreAuthorize("hasAuthority('CUSTOMER') and @securityService.isReviewOwner(#reviewId)")
     public ResponseEntity<BaseResponse<ReviewResponse>> updateReview(
             @PathVariable Long reviewId,
             @Valid @RequestBody UpdateReviewRequest request) {
@@ -52,7 +52,7 @@ public class ReviewController extends BaseController {
     }
 
     @DeleteMapping("/{reviewId}")
-    @PreAuthorize("hasRole('CUSTOMER') and @securityService.isReviewOwner(#reviewId)")
+    @PreAuthorize("hasAuthority('CUSTOMER') and @securityService.isReviewOwner(#reviewId)")
     public ResponseEntity<BaseResponse<Void>> deleteReview(
             @PathVariable Long reviewId) {
         Long customerId = securityService.getCurrentCustomerId();
@@ -87,7 +87,7 @@ public class ReviewController extends BaseController {
     }
 
     @PostMapping("/{reviewId}/helpful")
-    @PreAuthorize("hasRole('CUSTOMER')")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
     public ResponseEntity<BaseResponse<Void>> markReviewHelpful(
             @PathVariable Long reviewId) {
         Long customerId = securityService.getCurrentCustomerId();
@@ -99,7 +99,7 @@ public class ReviewController extends BaseController {
     }
 
     @PostMapping("/{reviewId}/not-helpful")
-    @PreAuthorize("hasRole('CUSTOMER')")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
     public ResponseEntity<BaseResponse<Void>> markReviewNotHelpful(
             @PathVariable Long reviewId) {
         Long customerId = securityService.getCurrentCustomerId();
@@ -111,7 +111,7 @@ public class ReviewController extends BaseController {
     }
 
     @GetMapping("/customer/{customerId}")
-    @PreAuthorize("hasRole('CUSTOMER') and @securityService.isCurrentUser(#customerId)")
+    @PreAuthorize("hasAuthority('CUSTOMER') and @securityService.isCurrentUser(#customerId)")
     public ResponseEntity<BaseResponse<PaginatedResponse<ReviewResponse>>> getCustomerReviews(
             @PathVariable Long customerId,
             @RequestParam(defaultValue = "0") int page,
