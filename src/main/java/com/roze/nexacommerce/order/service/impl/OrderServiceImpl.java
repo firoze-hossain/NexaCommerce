@@ -6,6 +6,7 @@ import com.roze.nexacommerce.common.address.enums.AddressZone;
 import com.roze.nexacommerce.common.address.service.AddressService;
 import com.roze.nexacommerce.customer.entity.CustomerProfile;
 import com.roze.nexacommerce.customer.repository.CustomerProfileRepository;
+import com.roze.nexacommerce.email.service.EmailService;
 import com.roze.nexacommerce.exception.ResourceNotFoundException;
 import com.roze.nexacommerce.order.dto.request.GuestAddressRequest;
 import com.roze.nexacommerce.order.dto.request.GuestOrderCreateRequest;
@@ -23,6 +24,7 @@ import com.roze.nexacommerce.order.enums.PaymentStatus;
 import com.roze.nexacommerce.order.mapper.OrderMapper;
 import com.roze.nexacommerce.order.repository.OrderRepository;
 import com.roze.nexacommerce.order.service.OrderService;
+import com.roze.nexacommerce.order.service.ReceiptService;
 import com.roze.nexacommerce.product.entity.Product;
 import com.roze.nexacommerce.product.repository.ProductRepository;
 import com.roze.nexacommerce.security.SecurityService;
@@ -37,10 +39,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +53,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final AddressService addressService;
     private final SecurityService securityService;
+    private final EmailService emailService;
+    private final ReceiptService receiptService;
     @Value("${app.shipping.inside-dhaka:60}")
     private BigDecimal insideDhakaShipping;
 
@@ -198,8 +201,154 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
         log.info("Guest order created successfully with ID: {} and number: {}",
                 savedOrder.getId(), savedOrder.getOrderNumber());
-
+// Send email receipt if requested (default is true)
+//        if (request.getSendEmailReceipt() != null && request.getSendEmailReceipt()) {
+//            sendGuestOrderReceiptEmail(savedOrder);
+//        }
+// Send email receipt with PDF attachment if requested
+        if (request.getSendEmailReceipt() != null && request.getSendEmailReceipt()) {
+            sendGuestOrderReceiptEmailWithPdf(savedOrder);
+        }
         return orderMapper.toResponse(savedOrder);
+    }
+
+    private void sendGuestOrderReceiptEmailWithPdf(Order order) {
+        try {
+            log.info("Sending receipt email with PDF for guest order: {} to: {}",
+                    order.getOrderNumber(), order.getGuestEmail());
+
+            // Generate receipt PDF
+            byte[] receiptPdf = receiptService.generateOrderReceipt(order.getOrderNumber());
+
+            // Prepare email variables
+            Map<String, Object> emailVariables = prepareReceiptEmailVariables(order);
+
+            // Prepare attachment details
+            String attachmentName = "order-receipt-" + order.getOrderNumber() + ".pdf";
+            String contentType = "application/pdf";
+
+            // Send templated email with PDF attachment
+            emailService.sendTemplatedEmailWithAttachment(
+                    order.getGuestEmail(),
+                    "GUEST_ORDER_RECEIPT_WITH_PDF",
+                    emailVariables,
+                    "ORDER_CONFIRMATION",
+                    attachmentName,
+                    receiptPdf,
+                    contentType
+            );
+
+            log.info("Receipt email with PDF sent successfully for order: {}", order.getOrderNumber());
+
+        } catch (Exception e) {
+            log.error("Failed to send receipt email with PDF for order: {}", order.getOrderNumber(), e);
+            // Don't throw exception - email failure shouldn't fail the order creation
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public void validateGuestOrderAccess(String orderNumber, String phoneNumber) {
+        log.debug("Validating guest order access for order: {} with phoneNumber: {}", orderNumber, phoneNumber);
+
+        Order order = getOrderEntityByNumber(orderNumber);
+
+        if (!order.isGuestOrder()) {
+            throw new RuntimeException("Order is not a guest order");
+        }
+
+        if (!order.getGuestPhone().equalsIgnoreCase(phoneNumber)) {
+            throw new RuntimeException("Invalid phone number for guest order access");
+        }
+    }
+// ========== EMAIL RECEIPT METHODS ==========
+
+    private void sendGuestOrderReceiptEmail(Order order) {
+        try {
+            log.info("Sending receipt email for guest order: {} to: {}",
+                    order.getOrderNumber(), order.getGuestEmail());
+
+            // Prepare email variables
+            Map<String, Object> emailVariables = prepareReceiptEmailVariables(order);
+
+            // Send templated email
+            emailService.sendTemplatedEmail(
+                    order.getGuestEmail(),
+                    "GUEST_ORDER_RECEIPT",
+                    emailVariables,
+                    "ORDER_CONFIRMATION"
+            );
+
+            log.info("Receipt email sent successfully for order: {}", order.getOrderNumber());
+
+        } catch (Exception e) {
+            log.error("Failed to send receipt email for order: {}", order.getOrderNumber(), e);
+            // Don't throw exception - email failure shouldn't fail the order creation
+        }
+    }
+
+    private Map<String, Object> prepareReceiptEmailVariables(Order order) {
+        Map<String, Object> variables = new HashMap<>();
+
+        // Order information
+        variables.put("orderNumber", order.getOrderNumber());
+        variables.put("orderDate", order.getCreatedAt().format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a")));
+        variables.put("orderStatus", order.getStatus().toString());
+        variables.put("paymentStatus", order.getPaymentStatus().toString());
+        variables.put("finalAmount", order.getFinalAmount());
+        variables.put("itemCount", order.getOrderItems().size());
+        variables.put("subtotal", order.getTotalAmount());
+        variables.put("shippingAmount", order.getShippingAmount());
+        variables.put("taxAmount", order.getTaxAmount());
+        variables.put("discountAmount", order.getDiscountAmount());
+
+        // Customer information
+        variables.put("customerName", order.getGuestName());
+        variables.put("customerEmail", order.getGuestEmail());
+        variables.put("customerPhone", order.getGuestPhone());
+
+        // Store information
+        variables.put("storeName", "NexaCommerce");
+        variables.put("storeEmail", "support@nexacommerce.com");
+        variables.put("storePhone", "+880 1234-567890");
+        variables.put("storeAddress", "123 Commerce Street, Dhaka, Bangladesh");
+
+        // Order items summary
+        variables.put("orderItems", prepareOrderItemsSummary(order.getOrderItems()));
+
+        // Shipping information
+        if (order.getShippingAddress() != null) {
+            variables.put("shippingAddress", formatAddressForEmail(order.getShippingAddress()));
+        }
+
+        // Track order URL
+        variables.put("trackOrderUrl", "https://nexacommerce.com/track-order/" + order.getOrderNumber());
+        // PDF attachment info
+        variables.put("pdfFileName", "order-receipt-" + order.getOrderNumber() + ".pdf");
+
+        return variables;
+    }
+
+    private List<Map<String, Object>> prepareOrderItemsSummary(List<OrderItem> orderItems) {
+        return orderItems.stream()
+                .map(item -> {
+                    Map<String, Object> itemMap = new HashMap<>();
+                    itemMap.put("productName", item.getProductName());
+                    itemMap.put("quantity", item.getQuantity());
+                    itemMap.put("unitPrice", item.getPrice());
+                    itemMap.put("subtotal", item.getSubtotal());
+                    return itemMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private String formatAddressForEmail(OrderAddress address) {
+        return String.format("%s\n%s, %s\n%s%s\nPhone: %s",
+                address.getFullName(),
+                address.getAddressLine(),
+                address.getArea(),
+                address.getCity(),
+                address.getLandmark() != null ? ", " + address.getLandmark() : "",
+                address.getPhone());
     }
 
     private BigDecimal calculateShippingAmount(Address address, BigDecimal subtotal) {
@@ -483,6 +632,24 @@ public class OrderServiceImpl implements OrderService {
 
         Order updatedOrder = orderRepository.save(order);
         return orderMapper.toResponse(updatedOrder);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Order getOrderEntityById(Long orderId) {
+        log.debug("Fetching order entity by ID: {}", orderId);
+
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Order getOrderEntityByNumber(String orderNumber) {
+        log.debug("Fetching order entity by number: {}", orderNumber);
+
+        return orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "orderNumber", orderNumber));
     }
 
     // ============ HELPER METHODS ============

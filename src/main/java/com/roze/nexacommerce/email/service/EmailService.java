@@ -12,7 +12,13 @@ public interface EmailService {
     EmailLogResponse sendTemplatedEmail(String to, String templateKey, Map<String, Object> variables, String purpose);
 
     List<EmailLogResponse> sendBulkEmails(List<String> recipients, String templateKey, Map<String, Object> variables, String purpose);
+    EmailLogResponse sendEmailWithAttachment(SendEmailRequest request, String attachmentName,
+                                             byte[] attachmentContent, String contentType);
 
+    EmailLogResponse sendTemplatedEmailWithAttachment(String to, String templateKey,
+                                                      Map<String, Object> variables, String purpose,
+                                                      String attachmentName, byte[] attachmentContent,
+                                                      String contentType);
     void retryFailedEmails();
 
     List<EmailLogResponse> getEmailLogsByStatus(String status);

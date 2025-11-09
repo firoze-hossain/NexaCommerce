@@ -4,6 +4,7 @@ import com.roze.nexacommerce.common.PaginatedResponse;
 import com.roze.nexacommerce.order.dto.request.GuestOrderCreateRequest;
 import com.roze.nexacommerce.order.dto.request.OrderCreateRequest;
 import com.roze.nexacommerce.order.dto.response.OrderResponse;
+import com.roze.nexacommerce.order.entity.Order;
 import com.roze.nexacommerce.order.enums.OrderStatus;
 import com.roze.nexacommerce.order.enums.PaymentStatus;
 import org.springframework.data.domain.Pageable;
@@ -39,4 +40,11 @@ public interface OrderService {
     OrderResponse addOrderNote(Long orderId, String note);
 
     PaginatedResponse<OrderResponse> getAllOrders(Pageable pageable);
+
+    void validateGuestOrderAccess(String orderNumber, String email);
+
+    Order getOrderEntityById(Long orderId);
+
+    Order getOrderEntityByNumber(String orderNumber);
+
 }

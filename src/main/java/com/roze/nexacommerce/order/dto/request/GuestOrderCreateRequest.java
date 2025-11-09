@@ -48,4 +48,7 @@ public class GuestOrderCreateRequest {
     @Valid
     @NotNull(message = "Order items are required")
     private List<OrderItemRequest> items;
+
+    @Builder.Default
+    private Boolean sendEmailReceipt = true;
 }

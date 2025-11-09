@@ -3,13 +3,16 @@ package com.roze.nexacommerce.email.entity;
 import com.roze.nexacommerce.common.BaseEntity;
 import com.roze.nexacommerce.email.enums.EmailPurpose;
 import com.roze.nexacommerce.email.enums.EmailStatus;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "email_logs")
@@ -59,9 +62,10 @@ public class EmailLog extends BaseEntity {
     private String providerResponse;
     
     private Integer retryCount;
-    
-    @Column(columnDefinition = "JSON")
-    private String templateVariables;
+
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> templateVariables; // Chan
     
     private String ipAddress;
     private String userAgent;

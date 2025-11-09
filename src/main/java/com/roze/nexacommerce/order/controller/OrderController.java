@@ -8,12 +8,15 @@ import com.roze.nexacommerce.order.dto.request.OrderCreateRequest;
 import com.roze.nexacommerce.order.dto.response.OrderResponse;
 import com.roze.nexacommerce.order.enums.OrderStatus;
 import com.roze.nexacommerce.order.service.OrderService;
+import com.roze.nexacommerce.order.service.ReceiptService;
 import com.roze.nexacommerce.security.SecurityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController extends BaseController {
     private final OrderService orderService;
     private final SecurityService securityService;
-
+    private final ReceiptService receiptService;
     @PostMapping
     @PreAuthorize("hasAuthority('CREATE_ORDER') or @securityService.isCurrentCustomer()")
     public ResponseEntity<BaseResponse<OrderResponse>> createOrder(
@@ -139,6 +142,47 @@ public class OrderController extends BaseController {
         return ok(response, "Order cancelled successfully");
     }
 
+//    @GetMapping("/{orderId}/receipt")
+//    @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isOrderOwner(#orderId) or @securityService.isVendorOrder(#orderId)")
+//    public ResponseEntity<byte[]> downloadOrderReceipt(@PathVariable Long orderId) {
+//        byte[] pdfContent = receiptService.generateOrderReceipt(orderId);
+//
+//        return ResponseEntity.ok()
+//                .contentType(MediaType.APPLICATION_PDF)
+//                .header(HttpHeaders.CONTENT_DISPOSITION,
+//                        "attachment; filename=\"order-receipt-" + orderId + ".pdf\"")
+//                .body(pdfContent);
+//    }
+
+    @GetMapping("/number/{orderNumber}/receipt")
+    @PreAuthorize("hasAuthority('READ_ORDER') or @securityService.isOrderOwnerByNumber(#orderNumber) or @securityService.isVendorOrderByNumber(#orderNumber)")
+    public ResponseEntity<byte[]> downloadOrderReceiptByNumber(@PathVariable String orderNumber) {
+        byte[] pdfContent = receiptService.generateOrderReceipt(orderNumber);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"order-receipt-" + orderNumber + ".pdf\"")
+                .body(pdfContent);
+    }
+
+    // Guest order receipt (no authentication required, but validate email)
+    @GetMapping("/guest/receipt/{orderNumber}")
+    public ResponseEntity<byte[]> downloadGuestOrderReceipt(
+            @PathVariable String orderNumber,
+            @RequestParam String phoneNumber) {
+
+        // Validate guest order access
+        orderService.validateGuestOrderAccess(orderNumber, phoneNumber);
+
+        byte[] pdfContent = receiptService.generateOrderReceipt(orderNumber);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"order-receipt-" + orderNumber + ".pdf\"")
+                .body(pdfContent);
+    }
     private Long getCurrentCustomerId() {
         return securityService.getCurrentCustomerId();
     }

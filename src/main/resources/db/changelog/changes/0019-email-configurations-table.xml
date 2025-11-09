@@ -538,4 +538,17 @@
                 columnName="template_data"
                 newDataType="jsonb"/>
     </changeSet>
+
+    <!-- ChangeSet to alter email_logs template_variables from JSON to JSONB -->
+    <changeSet id="1022-alter-email-logs-template-variables-to-jsonb" author="Md. Firoze Hossain">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="email_logs"/>
+            <columnExists tableName="email_logs" columnName="template_variables"/>
+        </preConditions>
+
+        <!-- Convert template_variables from json to jsonb -->
+        <sql>ALTER TABLE email_logs ALTER COLUMN template_variables TYPE jsonb USING template_variables::jsonb;</sql>
+
+        <comment>Convert template_variables column from JSON to JSONB for better performance</comment>
+    </changeSet>
 </databaseChangeLog>
