@@ -62,6 +62,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 .requestMatchers(HttpMethod.PUT, "/carts/guest/**").permitAll()
                                 .requestMatchers(HttpMethod.DELETE, "/carts/guest/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/orders/guest/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/orders/guest/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/addresses/bangladesh/areas").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/addresses/bangladesh/cities").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/addresses/bangladesh/location-data").permitAll()
