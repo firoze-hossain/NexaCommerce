@@ -69,6 +69,9 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 .requestMatchers(HttpMethod.GET, "/search/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/reviews/product/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/reviews/product/*/summary").permitAll()
+                                // Public hero content endpoints - ADD THESE
+                                .requestMatchers(HttpMethod.GET, "/hero/public/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/hero/public/**").permitAll()
                                 .requestMatchers(
                                         "/public/**",
                                         "/customers/register",

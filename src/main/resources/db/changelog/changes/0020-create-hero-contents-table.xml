@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- ===============================
+         CREATE hero_contents TABLE - FIXED VERSION
+         =============================== -->
+    <changeSet id="0011-create-hero-contents-table-fixed" author="Md. Firoze Hossain">
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="hero_contents"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="hero_contents">
+
+            <!-- Primary Key -->
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <!-- Entity Fields -->
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="subtitle" type="varchar(255)"/>
+
+            <column name="description" type="text"/>
+
+            <column name="background_image" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="overlay_color" type="varchar(255)"/>
+
+            <column name="overlay_opacity" type="double" defaultValueNumeric="0.8">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="display_order" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="button1_text" type="varchar(255)"/>
+            <column name="button1_url" type="varchar(255)"/>
+            <column name="button1_color" type="varchar(255)"/>
+
+            <column name="button2_text" type="varchar(255)"/>
+            <column name="button2_url" type="varchar(255)"/>
+            <column name="button2_color" type="varchar(255)"/>
+
+            <column name="start_date" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="end_date" type="timestamp"/>
+
+            <!-- Enum fields stored as VARCHAR -->
+            <column name="type" type="varchar(100)" defaultValue="MAIN_BANNER">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="target_audience" type="varchar(100)" defaultValue="ALL">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="segment_filters" type="text"/>
+
+            <column name="impressions" type="integer" defaultValueNumeric="0"/>
+            <column name="clicks" type="integer" defaultValueNumeric="0"/>
+
+            <!-- Changed from decimal to double to match Java Double type -->
+            <column name="conversion_rate" type="double" defaultValueNumeric="0.0"/>
+
+            <!-- BaseEntity Fields -->
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="created_by" type="bigint"/>
+            <column name="modified_by" type="bigint"/>
+            <column name="version" type="bigint" defaultValueNumeric="0"/>
+            <column name="ip_address" type="varchar(45)"/>
+
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
