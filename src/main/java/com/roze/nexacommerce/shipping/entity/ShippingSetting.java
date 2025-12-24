@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Where(clause = "deleted = false")
 public class ShippingSetting extends BaseEntity {
 
     @Column(name = "location_type", nullable = false, unique = true)
