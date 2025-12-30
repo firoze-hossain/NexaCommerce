@@ -1,6 +1,7 @@
 package com.roze.nexacommerce.user.entity;
 
 import com.roze.nexacommerce.common.BaseEntity;
+import com.roze.nexacommerce.customer.entity.CustomerProfile;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +36,9 @@ public class User extends BaseEntity implements UserDetails, UserPrincipal {
     @Builder.Default
     private Boolean active = true;
 
+    // Add bidirectional relationship with CustomerProfile
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private CustomerProfile customerProfile;
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Collection<GrantedAuthority> authorities = role.getPermissions().stream().map(permission ->
